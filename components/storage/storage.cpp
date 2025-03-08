@@ -19,20 +19,20 @@ std::vector<uint8_t> StorageFile::read() {
       file.read(reinterpret_cast<char*>(data.data()), data.size());
     }
   } else if (platform_ == "flash") {
-    // Implementation for flash storage
+    // Implémentation pour la mémoire flash
   } else if (platform_ == "inline") {
-    // Implementation for inline storage
+    // Implémentation pour le stockage inline
   }
 
   if (data.empty()) {
-    ESP_LOGE(TAG, "Failed to read file: %s", path_.c_str());
+    ESP_LOGE(TAG, "Échec de la lecture du fichier : %s", path_.c_str());
   }
 
   return data;
 }
 
 void StorageComponent::setup() {
-  ESP_LOGD(TAG, "Setting up storage platform: %s", platform_.c_str());
+  ESP_LOGD(TAG, "Configuration du stockage : %s", platform_.c_str());
   
   if (platform_ == "sd_card") {
     setup_sd_card();
@@ -53,7 +53,7 @@ void StorageComponent::on_setup_web_server() {
     web_server_->on(url.c_str(), HTTP_GET, [this, file](AsyncWebServerRequest *req) {
       this->serve_file(file, req);
     });
-    ESP_LOGD(TAG, "Registered media URL: %s", url.c_str());
+    ESP_LOGD(TAG, "URL enregistrée : %s", url.c_str());
   }
 }
 
@@ -62,20 +62,23 @@ void StorageComponent::serve_file(StorageFile *file, AsyncWebServerRequest *req)
   if (!data.empty()) {
     req->send(200, "audio/mpeg", data.data(), data.size());
   } else {
-    req->send(404, "text/plain", "File not found");
+    req->send(404, "text/plain", "Fichier non trouvé");
   }
 }
 
 void StorageComponent::setup_sd_card() {
-  ESP_LOGD(TAG, "Initializing SD card storage");
+  ESP_LOGD(TAG, "Initialisation de la carte SD");
+  // Ajoutez ici l'initialisation de la SD Card (ex: SD.begin())
 }
 
 void StorageComponent::setup_flash() {
-  ESP_LOGD(TAG, "Initializing flash storage");
+  ESP_LOGD(TAG, "Initialisation de la mémoire flash");
+  // Ajoutez ici l'initialisation de la mémoire flash (ex: SPIFFS)
 }
 
 void StorageComponent::setup_inline() {
-  ESP_LOGD(TAG, "Initializing inline storage");
+  ESP_LOGD(TAG, "Initialisation du stockage inline");
+  // Implémentation spécifique au stockage inline
 }
 
 }  // namespace storage
