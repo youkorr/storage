@@ -1,11 +1,43 @@
 #include "storage.h"
 #include "esphome/core/log.h"
 #include "esphome/components/web_server_base/web_server_base.h"
+#include <fstream>
 
 namespace esphome {
 namespace storage {
 
 static const char *const TAG = "storage";
+
+std::vector<uint8_t> StorageComponent::read_file(char const *path) {
+  return read_file(std::string(path));
+}
+
+std::vector<uint8_t> StorageComponent::read_file(std::string const &path) {
+  std::vector<uint8_t> data;
+  
+  if (platform_ == "sd_card") {
+    // Implementation for SD card
+    std::ifstream file(path, std::ios::binary);
+    if (file) {
+      file.seekg(0, std::ios::end);
+      data.resize(file.tellg());
+      file.seekg(0, std::ios::beg);
+      file.read(reinterpret_cast<char*>(data.data()), data.size());
+    }
+  } else if (platform_ == "flash") {
+    // Implementation for flash storage
+    // This would depend on your specific flash storage implementation
+  } else if (platform_ == "inline") {
+    // Implementation for inline storage
+    // This would depend on your specific inline storage implementation
+  }
+
+  if (data.empty()) {
+    ESP_LOGE(TAG, "Failed to read file: %s", path.c_str());
+  }
+
+  return data;
+}
 
 void StorageComponent::setup() {
   ESP_LOGD(TAG, "Setting up storage platform: %s", platform_.c_str());
@@ -34,8 +66,12 @@ void StorageComponent::on_setup_web_server() {
 }
 
 void StorageComponent::serve_file(const std::string &path, const std::string &id) {
-  // Implementation for serving the actual file content
-  // This would depend on the storage platform
+  auto data = read_file(path);
+  if (!data.empty()) {
+    web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
+  } else {
+    web_server_->send_error(req, 404, "File not found");
+  }
 }
 
 void StorageComponent::setup_sd_card() {
