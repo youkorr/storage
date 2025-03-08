@@ -1,9 +1,9 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_PLATFORM, CONF_WEB_SERVER
-from esphome.components import web_server_base
+from esphome.components import web_server_base, audio
 
-DEPENDENCIES = ['media_player', 'web_server_base']
+DEPENDENCIES = ['media_player', 'web_server_base', 'audio']
 CODEOWNERS = ["@votre_nom"]
 
 # Déclaration des IDs
@@ -14,7 +14,7 @@ CONF_MEDIA_FILE = "media_file"
 
 storage_ns = cg.esphome_ns.namespace('storage')
 StorageComponent = storage_ns.class_('StorageComponent', cg.Component)
-StorageFile = storage_ns.class_('StorageFile', cg.Component)
+StorageFile = storage_ns.class_('StorageFile', audio.AudioFile, cg.Component)
 
 FILE_SCHEMA = cv.Schema({
     cv.Required(CONF_PATH): cv.string,
