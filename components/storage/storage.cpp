@@ -1,20 +1,11 @@
 #include "storage.h"
 #include "esphome/core/log.h"
+#include "esphome/components/web_server_base/web_server_base.h"
 
 namespace esphome {
 namespace storage {
 
 static const char *const TAG = "storage";
-
-std::string StorageComponent::get_file_path(const std::string &file_id) const {
-  for (const auto &file : files_) {
-    if (file.second == file_id) {
-      return file.first;
-    }
-  }
-  ESP_LOGW(TAG, "File with ID %s not found", file_id.c_str());
-  return "";
-}
 
 void StorageComponent::setup() {
   ESP_LOGD(TAG, "Setting up storage platform: %s", platform_.c_str());
@@ -27,26 +18,36 @@ void StorageComponent::setup() {
     setup_inline();
   }
 
-  // Log registered files
-  for (const auto &file : files_) {
-    ESP_LOGD(TAG, "Registered file: %s -> %s", 
-             file.first.c_str(), file.second.c_str());
+  if (web_server_ != nullptr) {
+    this->on_setup_web_server();
   }
+}
+
+void StorageComponent::on_setup_web_server() {
+  for (const auto &file : files_) {
+    std::string url = "/media/" + file.second;
+    web_server_->add_handler(url, [this, file](web_server_base::Request *req) {
+      this->serve_file(file.first, file.second);
+    });
+    ESP_LOGD(TAG, "Registered media URL: %s -> %s", url.c_str(), file.first.c_str());
+  }
+}
+
+void StorageComponent::serve_file(const std::string &path, const std::string &id) {
+  // Implementation for serving the actual file content
+  // This would depend on the storage platform
 }
 
 void StorageComponent::setup_sd_card() {
   ESP_LOGD(TAG, "Initializing SD card storage");
-  // SD card initialization logic here
 }
 
 void StorageComponent::setup_flash() {
   ESP_LOGD(TAG, "Initializing flash storage");
-  // Flash storage logic here
 }
 
 void StorageComponent::setup_inline() {
   ESP_LOGD(TAG, "Initializing inline storage");
-  // Inline storage logic here
 }
 
 }  // namespace storage
