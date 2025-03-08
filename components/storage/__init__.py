@@ -18,7 +18,9 @@ def validate_data(value):
   if isinstance(value, str):
     return cv.string(value)
   if isinstance(value, dict) and 'lambda' in value:
-    return cv.templatable(value['lambda'])
+    return cv.returning_lambda(value['lambda'])
+  if callable(value):
+    return value
   raise cv.Invalid("Data must be either a string or a lambda")
 
 FILE_SCHEMA = cv.Schema({
