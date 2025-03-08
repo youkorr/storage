@@ -10,7 +10,7 @@ static const char *const TAG = "storage";
 std::vector<uint8_t> StorageFile::read() {
   std::vector<uint8_t> data;
   
-  if (platform_ == "sd_card") {
+  if (platform_ == "sd_card") {  // Maintenant accessible
     std::ifstream file(path_, std::ios::binary);
     if (file) {
       file.seekg(0, std::ios::end);
@@ -34,6 +34,11 @@ std::vector<uint8_t> StorageFile::read() {
 void StorageComponent::setup() {
   ESP_LOGD(TAG, "Configuration du stockage : %s", platform_.c_str());
   
+  // Propagation de platform_ vers les fichiers
+  for (auto *file : files_) {
+    file->set_platform(platform_);  // Ligne cruciale ajoutée
+  }
+
   if (platform_ == "sd_card") {
     setup_sd_card();
   } else if (platform_ == "flash") {
@@ -42,9 +47,9 @@ void StorageComponent::setup() {
     setup_inline();
   }
 
-  // Configuration du serveur web natif
+  // Configuration du serveur web
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.uri_match_fn = httpd_uri_match_wildcard;  // Support des wildcards
+  config.uri_match_fn = httpd_uri_match_wildcard;
   ESP_ERROR_CHECK(httpd_start(&server_, &config));
   this->on_setup_web_server();
 }
