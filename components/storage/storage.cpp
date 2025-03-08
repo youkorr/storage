@@ -9,7 +9,28 @@ namespace storage {
 static const char *const TAG = "storage";
 
 std::vector<uint8_t> StorageComponent::read_file(StorageFile *file) {
-  return read_file(file->get_path());
+  std::vector<uint8_t> data;
+  std::string path = file->get_path();
+  
+  if (platform_ == "sd_card") {
+    std::ifstream file(path, std::ios::binary);
+    if (file) {
+      file.seekg(0, std::ios::end);
+      data.resize(file.tellg());
+      file.seekg(0, std::ios::beg);
+      file.read(reinterpret_cast<char*>(data.data()), data.size());
+    }
+  } else if (platform_ == "flash") {
+    // Implementation for flash storage
+  } else if (platform_ == "inline") {
+    // Implementation for inline storage
+  }
+
+  if (data.empty()) {
+    ESP_LOGE(TAG, "Failed to read file: %s", path.c_str());
+  }
+
+  return data;
 }
 
 void StorageComponent::setup() {
