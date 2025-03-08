@@ -4,6 +4,7 @@
 #include "esphome/components/web_server/web_server.h"
 #include <vector>
 #include <string>
+#include <functional>
 
 namespace esphome {
 namespace storage {
@@ -13,7 +14,7 @@ class StorageComponent : public Component {
   void set_platform(const std::string &platform) { platform_ = platform; }
   void set_web_server(web_server_base::WebServerBase *web_server) { web_server_ = web_server; }
   
-  void add_file(const std::string &source, const std::string &id) {
+  void add_file(std::function<std::vector<uint8_t>()> source, const std::string &id) {
     files_.emplace_back(source, id);
   }
   
@@ -36,12 +37,12 @@ class StorageComponent : public Component {
   void setup_sd_card();
   void setup_flash();
   void setup_inline();
-  void serve_file(const std::string &path, const std::string &id);
+  void serve_file(const std::string &id);
 
  private:
   std::string platform_;
   web_server_base::WebServerBase *web_server_{nullptr};
-  std::vector<std::pair<std::string, std::string>> files_;
+  std::vector<std::pair<std::function<std::vector<uint8_t>()>, std::string>> files_;
 };
 
 }  // namespace storage
