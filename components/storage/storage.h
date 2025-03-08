@@ -25,7 +25,10 @@ class StorageComponent : public Component {
     }
     return "";
   }
-  
+
+  std::vector<uint8_t> read_file(char const *path);
+  std::vector<uint8_t> read_file(std::string const &path);
+
   void setup() override;
   void on_setup_web_server();
 
