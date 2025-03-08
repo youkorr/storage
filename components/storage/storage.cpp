@@ -8,32 +8,8 @@ namespace storage {
 
 static const char *const TAG = "storage";
 
-std::vector<uint8_t> StorageComponent::read_file(char const *path) {
-  return read_file(std::string(path));
-}
-
-std::vector<uint8_t> StorageComponent::read_file(std::string const &path) {
-  std::vector<uint8_t> data;
-  
-  if (platform_ == "sd_card") {
-    std::ifstream file(path, std::ios::binary);
-    if (file) {
-      file.seekg(0, std::ios::end);
-      data.resize(file.tellg());
-      file.seekg(0, std::ios::beg);
-      file.read(reinterpret_cast<char*>(data.data()), data.size());
-    }
-  } else if (platform_ == "flash") {
-    // Implementation for flash storage
-  } else if (platform_ == "inline") {
-    // Implementation for inline storage
-  }
-
-  if (data.empty()) {
-    ESP_LOGE(TAG, "Failed to read file: %s", path.c_str());
-  }
-
-  return data;
+std::vector<uint8_t> StorageComponent::read_file(StorageFile *file) {
+  return read_file(file->get_path());
 }
 
 void StorageComponent::setup() {
@@ -53,17 +29,17 @@ void StorageComponent::setup() {
 }
 
 void StorageComponent::on_setup_web_server() {
-  for (const auto &file : files_) {
-    std::string url = "/media/" + file.second;
+  for (auto *file : files_) {
+    std::string url = "/media/" + file->get_path();
     web_server_->add_handler(url, [this, file](web_server_base::Request *req) {
-      this->serve_file(file.first, file.second);
+      this->serve_file(file);
     });
-    ESP_LOGD(TAG, "Registered media URL: %s -> %s", url.c_str(), file.first.c_str());
+    ESP_LOGD(TAG, "Registered media URL: %s", url.c_str());
   }
 }
 
-void StorageComponent::serve_file(const std::string &path, const std::string &id) {
-  auto data = read_file(path);
+void StorageComponent::serve_file(StorageFile *file) {
+  auto data = read_file(file);
   if (!data.empty()) {
     web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
   } else {
