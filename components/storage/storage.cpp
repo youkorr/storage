@@ -10,7 +10,7 @@ static const char *const TAG = "storage";
 std::vector<uint8_t> StorageFile::read() {
   std::vector<uint8_t> data;
   
-  if (platform_ == "sd_card") {  // Maintenant accessible
+  if (platform_ == "sd_card") {
     std::ifstream file(path_, std::ios::binary);
     if (file) {
       file.seekg(0, std::ios::end);
@@ -30,6 +30,7 @@ std::vector<uint8_t> StorageFile::read() {
 
   return data;
 }
+
 
 void StorageComponent::setup() {
   ESP_LOGD(TAG, "Configuration du stockage : %s", platform_.c_str());
