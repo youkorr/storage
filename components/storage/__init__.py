@@ -38,7 +38,10 @@ def to_code(config):
     
     for file in config[CONF_FILES]:
         cg.add(var.add_file(file[CONF_PATH], file[CONF_ID]))
-        cg.register_variable(file[CONF_ID], var)
+        # Enregistrer l'ID globalement
+        cg.add_define(f"STORAGE_FILE_{file[CONF_ID].upper()}", file[CONF_ID])
+        # Créer une variable globale pour l'ID
+        cg.add_global(f"storage_file_{file[CONF_ID]}", var)
 
 
 
