@@ -14,8 +14,15 @@ CONF_MEDIA_FILE = "media_file"
 storage_ns = cg.esphome_ns.namespace('storage')
 StorageComponent = storage_ns.class_('StorageComponent', cg.Component)
 
+def validate_source(value):
+  if isinstance(value, str):
+    return cv.string(value)
+  if isinstance(value, dict) and 'lambda' in value:
+    return cv.returning_lambda(value['lambda'])
+  raise cv.Invalid("Source must be either a string or a lambda")
+
 FILE_SCHEMA = cv.Schema({
-    cv.Required(CONF_SOURCE): cv.string,
+    cv.Required(CONF_SOURCE): validate_source,
     cv.Required(CONF_ID): cv.string,
 })
 
@@ -37,7 +44,13 @@ def to_code(config):
         cg.add(var.set_web_server(web_server))
     
     for file in config[CONF_FILES]:
-        cg.add(var.add_file(file[CONF_SOURCE], file[CONF_ID]))
+        if isinstance(file[CONF_SOURCE], str):
+            cg.add(var.add_file(
+                lambda path=file[CONF_SOURCE]: id(var).read_file(path),
+                file[CONF_ID]
+            ))
+        else:
+            cg.add(var.add_file(file[CONF_SOURCE], file[CONF_ID]))
         cg.register_variable(file[CONF_ID], var)
 
 
