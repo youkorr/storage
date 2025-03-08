@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
-#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWebServer.h>  // Inclusion corrigée
 #include <vector>
 #include <string>
 
@@ -12,7 +12,6 @@ class StorageFile : public Component {
  public:
   void set_path(const std::string &path) { path_ = path; }
   std::string get_path() const { return path_; }
-
   std::vector<uint8_t> read();
 
  private:
