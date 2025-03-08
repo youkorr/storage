@@ -13,10 +13,11 @@ CONF_MEDIA_FILE = "media_file"
 
 storage_ns = cg.esphome_ns.namespace('storage')
 StorageComponent = storage_ns.class_('StorageComponent', cg.Component)
+StorageFile = storage_ns.class_('StorageFile', cg.Component)
 
 FILE_SCHEMA = cv.Schema({
     cv.Required(CONF_PATH): cv.string,
-    cv.Required(CONF_ID): cv.use_id(cg.std_string),
+    cv.Required(CONF_ID): cv.declare_id(StorageFile),
 })
 
 CONFIG_SCHEMA = cv.Schema({
@@ -40,8 +41,7 @@ def to_code(config):
         file_var = cg.new_Pvariable(file[CONF_ID])
         cg.add(file_var.set_path(file[CONF_PATH]))
         cg.add(var.add_file(file_var))
-        # Enregistrer l'ID correctement
-        yield cg.register_variable(file[CONF_ID], file_var)
+        yield cg.register_component(file_var, file)
 
 
 
