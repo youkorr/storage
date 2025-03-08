@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/audio/audio_file.h"  // Inclusion obligatoire
 #include "esp_http_server.h"
 #include <vector>
 #include <string>
@@ -8,16 +9,25 @@
 namespace esphome {
 namespace storage {
 
-class StorageFile : public Component {
+class StorageFile : public audio::AudioFile, public Component {  // Héritage double
  public:
-  void set_path(const std::string &path) { path_ = path; }
-  void set_platform(const std::string &platform) { platform_ = platform; }  // Ajouté
-  std::string get_path() const { return path_; }
-  std::vector<uint8_t> read();
+  void set_path(const std::string &path) override {  // Override explicite
+    path_ = path;
+  }
+
+  std::string get_path() const override {  // Override explicite
+    return path_;
+  }
+
+  std::vector<uint8_t> read() override;  // Implémentation obligatoire
+
+  void set_platform(const std::string &platform) {
+    platform_ = platform;
+  }
 
  private:
   std::string path_;
-  std::string platform_;  // Ajouté
+  std::string platform_;
 };
 
 class StorageComponent : public Component {
