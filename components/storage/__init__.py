@@ -6,10 +6,13 @@ from esphome.components import web_server_base
 DEPENDENCIES = ['media_player', 'web_server_base']
 CODEOWNERS = ["@votre_nom"]
 
+# Déclaration des IDs
 CONF_STORAGE = "storage"
 CONF_FILES = "files"
 CONF_PATH = "path"
 CONF_MEDIA_FILE = "media_file"
+CONF_FILE_ID = "file_id"
+CONF_STORAGE_ID = "storage_id"
 
 storage_ns = cg.esphome_ns.namespace('storage')
 StorageComponent = storage_ns.class_('StorageComponent', cg.Component)
@@ -17,18 +20,18 @@ StorageFile = storage_ns.class_('StorageFile', cg.Component)
 
 FILE_SCHEMA = cv.Schema({
     cv.Required(CONF_PATH): cv.string,
-    cv.Required(CONF_ID): cv.declare_id(StorageFile),
+    cv.Required(CONF_FILE_ID): cv.declare_id(StorageFile),
 })
 
 CONFIG_SCHEMA = cv.Schema({
     cv.Required(CONF_PLATFORM): cv.one_of("sd_card", "flash", "inline", lower=True),
-    cv.Required(CONF_ID): cv.declare_id(StorageComponent),
+    cv.Required(CONF_STORAGE_ID): cv.declare_id(StorageComponent),
     cv.Required(CONF_FILES): cv.ensure_list(FILE_SCHEMA),
     cv.Optional(CONF_WEB_SERVER): cv.use_id(web_server_base.WebServerBase),
 }).extend(cv.COMPONENT_SCHEMA)
 
 def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
+    var = cg.new_Pvariable(config[CONF_STORAGE_ID])
     yield cg.register_component(var, config)
     
     cg.add(var.set_platform(config[CONF_PLATFORM]))
@@ -38,11 +41,10 @@ def to_code(config):
         cg.add(var.set_web_server(web_server))
     
     for file in config[CONF_FILES]:
-        file_var = cg.new_Pvariable(file[CONF_ID])
+        file_var = cg.new_Pvariable(file[CONF_FILE_ID])
         cg.add(file_var.set_path(file[CONF_PATH]))
         cg.add(var.add_file(file_var))
         yield cg.register_component(file_var, file)
-
 
 
 
