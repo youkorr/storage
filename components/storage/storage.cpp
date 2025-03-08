@@ -8,26 +8,25 @@ namespace storage {
 
 static const char *const TAG = "storage";
 
-std::vector<uint8_t> StorageComponent::read_file(StorageFile *file) {
+std::vector<uint8_t> StorageFile::read() {
   std::vector<uint8_t> data;
-  std::string path = file->get_path();
   
-  if (platform_ == "sd_card") {
-    std::ifstream file(path, std::ios::binary);
+  if (id(parent_)->get_platform() == "sd_card") {
+    std::ifstream file(path_, std::ios::binary);
     if (file) {
       file.seekg(0, std::ios::end);
       data.resize(file.tellg());
       file.seekg(0, std::ios::beg);
       file.read(reinterpret_cast<char*>(data.data()), data.size());
     }
-  } else if (platform_ == "flash") {
+  } else if (id(parent_)->get_platform() == "flash") {
     // Implementation for flash storage
-  } else if (platform_ == "inline") {
+  } else if (id(parent_)->get_platform() == "inline") {
     // Implementation for inline storage
   }
 
   if (data.empty()) {
-    ESP_LOGE(TAG, "Failed to read file: %s", path.c_str());
+    ESP_LOGE(TAG, "Failed to read file: %s", path_.c_str());
   }
 
   return data;
@@ -60,7 +59,7 @@ void StorageComponent::on_setup_web_server() {
 }
 
 void StorageComponent::serve_file(StorageFile *file) {
-  auto data = read_file(file);
+  auto data = file->read();
   if (!data.empty()) {
     web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
   } else {
