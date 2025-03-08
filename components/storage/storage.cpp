@@ -42,28 +42,47 @@ void StorageComponent::setup() {
     setup_inline();
   }
 
-  if (web_server_ != nullptr) {
-    this->on_setup_web_server();
-  }
+  // Configuration du serveur web natif
+  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.uri_match_fn = httpd_uri_match_wildcard;  // Support des wildcards
+  ESP_ERROR_CHECK(httpd_start(&server_, &config));
+  this->on_setup_web_server();
 }
 
 void StorageComponent::on_setup_web_server() {
   for (auto *file : files_) {
     std::string url = "/media/" + file->get_path();
-    web_server_->on(url.c_str(), HTTP_GET, [this, file](AsyncWebServerRequest *req) {
-      this->serve_file(file, req);
-    });
+    httpd_uri_t uri = {
+        .uri      = url.c_str(),
+        .method   = HTTP_GET,
+        .handler  = serve_file_handler,
+        .user_ctx = this  // Passage du contexte (this)
+    };
+    httpd_register_uri_handler(server_, &uri);
     ESP_LOGD(TAG, "URL enregistrée : %s", url.c_str());
   }
 }
 
-void StorageComponent::serve_file(StorageFile *file, AsyncWebServerRequest *req) {
-  auto data = file->read();
-  if (!data.empty()) {
-    req->send(200, "audio/mpeg", data.data(), data.size());
-  } else {
-    req->send(404, "text/plain", "Fichier non trouvé");
+// Handler de requête HTTP natif
+esp_err_t StorageComponent::serve_file_handler(httpd_req_t *req) {
+  StorageComponent *self = static_cast<StorageComponent*>(req->user_ctx);
+  
+  // Récupère le fichier correspondant à l'URL
+  std::string path(req->uri);
+  path.erase(0, 6);  // Supprime "/media/" du chemin
+  for (auto *file : self->files_) {
+    if (file->get_path() == path) {
+      auto data = file->read();
+      if (!data.empty()) {
+        httpd_resp_set_type(req, "audio/mpeg");
+        httpd_resp_send(req, reinterpret_cast<const char*>(data.data()), data.size());
+        return ESP_OK;
+      }
+    }
   }
+  
+  httpd_resp_send_404(req);
+  return ESP_OK;
 }
 
 void StorageComponent::setup_sd_card() {
