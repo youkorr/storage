@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
-#include <ESPAsyncWebServer.h>  // Inclusion corrigée
+#include "esp_http_server.h"  // Serveur web natif ESP-IDF
 #include <vector>
 #include <string>
 
@@ -21,7 +21,7 @@ class StorageFile : public Component {
 class StorageComponent : public Component {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
-  void set_web_server(AsyncWebServer *web_server) { web_server_ = web_server; }
+  void setup_web_server(httpd_handle_t server);  // Nouvelle méthode pour le serveur natif
   
   void add_file(StorageFile *file) {
     files_.push_back(file);
@@ -34,11 +34,11 @@ class StorageComponent : public Component {
   void setup_sd_card();
   void setup_flash();
   void setup_inline();
-  void serve_file(StorageFile *file, AsyncWebServerRequest *req);
+  static esp_err_t serve_file_handler(httpd_req_t *req);  // Handler natif
 
  private:
   std::string platform_;
-  AsyncWebServer *web_server_{nullptr};
+  httpd_handle_t server_{nullptr};  // Handle du serveur ESP-IDF
   std::vector<StorageFile*> files_;
 };
 
