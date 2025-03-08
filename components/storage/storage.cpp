@@ -56,23 +56,19 @@ void StorageComponent::on_setup_web_server() {
   for (const auto &file : files_) {
     std::string url = "/media/" + file.second;
     web_server_->add_handler(url, [this, file](web_server_base::Request *req) {
-      this->serve_file(file.second);
+      this->serve_file(file.first, file.second);
     });
-    ESP_LOGD(TAG, "Registered media URL: %s", url.c_str());
+    ESP_LOGD(TAG, "Registered media URL: %s -> %s", url.c_str(), file.first.c_str());
   }
 }
 
-void StorageComponent::serve_file(const std::string &id) {
-  for (const auto &file : files_) {
-    if (file.second == id) {
-      auto data = file.first();
-      if (!data.empty()) {
-        web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
-        return;
-      }
-    }
+void StorageComponent::serve_file(const std::string &path, const std::string &id) {
+  auto data = read_file(path);
+  if (!data.empty()) {
+    web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
+  } else {
+    web_server_->send_error(req, 404, "File not found");
   }
-  web_server_->send_error(req, 404, "File not found");
 }
 
 void StorageComponent::setup_sd_card() {
