@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/components/web_server/web_server.h"
 #include <vector>
 #include <string>
 
@@ -10,26 +11,33 @@ namespace storage {
 class StorageComponent : public Component {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
+  void set_web_server(web_server_base::WebServerBase *web_server) { web_server_ = web_server; }
+  
   void add_file(const std::string &source, const std::string &id) {
     files_.emplace_back(source, id);
   }
-  std::string get_file_path(const std::string &id) const {
+  
+  std::string get_file_url(const std::string &id) const {
     for (const auto &file : files_) {
       if (file.second == id) {
-        return file.first;
+        return "/media/" + file.second;
       }
     }
     return "";
   }
+  
   void setup() override;
+  void on_setup_web_server();
 
  protected:
   void setup_sd_card();
   void setup_flash();
   void setup_inline();
+  void serve_file(const std::string &path, const std::string &id);
 
  private:
   std::string platform_;
+  web_server_base::WebServerBase *web_server_{nullptr};
   std::vector<std::pair<std::string, std::string>> files_;
 };
 
