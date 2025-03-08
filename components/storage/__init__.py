@@ -28,21 +28,25 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_WEB_SERVER): cv.use_id(web_server_base.WebServerBase),
 }).extend(cv.COMPONENT_SCHEMA)
 
-def to_code(config):
+async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-    yield cg.register_component(var, config)
+    await cg.register_component(var, config)
     
+    # Définit la plateforme dans StorageComponent
     cg.add(var.set_platform(config[CONF_PLATFORM]))
     
-    if CONF_WEB_SERVER in config:
-        web_server = yield cg.get_variable(config[CONF_WEB_SERVER])
-        cg.add(var.set_web_server(web_server))
-    
+    # Propage la plateforme à chaque fichier
     for file in config[CONF_FILES]:
         file_var = cg.new_Pvariable(file[CONF_ID])
         cg.add(file_var.set_path(file[CONF_PATH]))
+        cg.add(file_var.set_platform(config[CONF_PLATFORM]))  # Ligne ajoutée
         cg.add(var.add_file(file_var))
-        yield cg.register_component(file_var, file)
+        await cg.register_component(file_var, file)
+    
+    # Configuration du serveur web
+    if CONF_WEB_SERVER in config:
+        web_server = await cg.get_variable(config[CONF_WEB_SERVER])
+        cg.add(var.set_web_server(web_server))
 
 
 
