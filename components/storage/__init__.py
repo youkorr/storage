@@ -16,7 +16,7 @@ StorageComponent = storage_ns.class_('StorageComponent', cg.Component)
 
 FILE_SCHEMA = cv.Schema({
     cv.Required(CONF_PATH): cv.string,
-    cv.Required(CONF_ID): cv.string,
+    cv.Required(CONF_ID): cv.use_id(cg.std_string),
 })
 
 CONFIG_SCHEMA = cv.Schema({
@@ -37,11 +37,11 @@ def to_code(config):
         cg.add(var.set_web_server(web_server))
     
     for file in config[CONF_FILES]:
-        cg.add(var.add_file(file[CONF_PATH], file[CONF_ID]))
-        # Enregistrer l'ID globalement
-        cg.add_define(f"STORAGE_FILE_{file[CONF_ID].upper()}", file[CONF_ID])
-        # Créer une variable globale pour l'ID
-        cg.add_global(f"storage_file_{file[CONF_ID]}", var)
+        file_var = cg.new_Pvariable(file[CONF_ID])
+        cg.add(file_var.set_path(file[CONF_PATH]))
+        cg.add(var.add_file(file_var))
+        # Enregistrer l'ID correctement
+        yield cg.register_variable(file[CONF_ID], file_var)
 
 
 
