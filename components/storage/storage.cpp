@@ -52,18 +52,18 @@ void StorageComponent::on_setup_web_server() {
   for (auto *file : files_) {
     std::string url = "/media/" + file->get_path();
     web_server_->add_handler(url, [this, file](web_server_base::Request *req) {
-      this->serve_file(file);
+      this->serve_file(file, req);
     });
     ESP_LOGD(TAG, "Registered media URL: %s", url.c_str());
   }
 }
 
-void StorageComponent::serve_file(StorageFile *file) {
+void StorageComponent::serve_file(StorageFile *file, web_server_base::Request *req) {
   auto data = file->read();
   if (!data.empty()) {
-    web_server_->send_data(req, data.data(), data.size(), "audio/mpeg");
+    req->send(200, "audio/mpeg", data.data(), data.size());
   } else {
-    web_server_->send_error(req, 404, "File not found");
+    req->send(404, "text/plain", "File not found");
   }
 }
 
