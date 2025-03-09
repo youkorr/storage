@@ -67,6 +67,31 @@ class StorageComponent : public Component {
 };
 
 }  // namespace storage
+
+// Pour résoudre le problème de conversion entre StorageFile et AudioFile,
+// si vous supprimez audio_file comme suggéré
+namespace audio {
+  // Définir un alias ou une classe vide pour AudioFile si nécessaire
+  // Ceci permet d'avoir une compatibilité minimale
+  class AudioFile {
+  public:
+    // Constructeur qui prend un StorageFile
+    AudioFile(storage::StorageFile* storage_file) : storage_file_(storage_file) {}
+    
+    // Méthodes minimales nécessaires
+    // À adapter selon vos besoins
+    storage::StorageFile* get_storage_file() const { return storage_file_; }
+    
+  private:
+    storage::StorageFile* storage_file_;
+  };
+  
+  // Fonction helper pour convertir
+  inline AudioFile* create_audio_file_from_storage(storage::StorageFile* storage_file) {
+    return new AudioFile(storage_file);
+  }
+}
+
 }  // namespace esphome
 
 
