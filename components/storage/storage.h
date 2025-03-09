@@ -1,29 +1,27 @@
 #pragma once
 
-#include "esp_http_server.h"
-#include "esp_log.h"
+#include "esphome/core/component.h"
+#include "esphome/components/audio/audio_file.h"
 #include <vector>
 #include <string>
 
 namespace esphome {
 namespace storage {
 
-class StorageComponent;  // Déclaration anticipée
-
-class StorageFile {
+class StorageFile : public audio::AudioFile, public Component {
  public:
   StorageFile(StorageComponent *parent) : parent_(parent) {}
   void set_path(const std::string &path) { path_ = path; }
   std::string get_path() const { return path_; }
 
-  std::vector<uint8_t> read();
+  std::vector<uint8_t> read() override;
 
  private:
   std::string path_;
   StorageComponent *parent_;
 };
 
-class StorageComponent {
+class StorageComponent : public Component {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
   void set_web_server(httpd_handle_t server) { server_ = server; }
@@ -32,7 +30,7 @@ class StorageComponent {
     files_.push_back(file);
   }
   
-  void setup();
+  void setup() override;
   void on_setup_web_server();
 
   std::string get_platform() const { return platform_; }
@@ -51,6 +49,7 @@ class StorageComponent {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
