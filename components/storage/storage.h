@@ -1,20 +1,19 @@
 #pragma once
 
 #include "esphome/core/component.h"
-#include "esphome/components/audio/audio_file.h"
 #include <vector>
 #include <string>
 
 namespace esphome {
 namespace storage {
 
-class StorageFile : public audio::AudioFile, public Component {
+class StorageFile : public Component {
  public:
   StorageFile(StorageComponent *parent) : parent_(parent) {}
   void set_path(const std::string &path) { path_ = path; }
   std::string get_path() const { return path_; }
 
-  std::vector<uint8_t> read() override;
+  std::vector<uint8_t> read();
 
  private:
   std::string path_;
