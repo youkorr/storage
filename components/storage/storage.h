@@ -1,38 +1,45 @@
 #pragma once
 
-#include "esphome/core/component.h"
+#include "esp_http_server.h"
+#include "esp_log.h"
 #include <vector>
 #include <string>
 
 namespace esphome {
 namespace storage {
 
-class StorageFile : public Component {
+class StorageFile {
  public:
   void set_path(const std::string &path) { path_ = path; }
   std::string get_path() const { return path_; }
-  std::vector<uint8_t> read();  // Déclaration manquante <button class="citation-flag" data-index="3">
+
+  std::vector<uint8_t> read();
 
  private:
   std::string path_;
 };
 
-class StorageComponent : public Component {
+class StorageComponent {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
-  void setup() override;  // Déclaration sans définition inline <button class="citation-flag" data-index="2">
-  void on_setup_web_server();  // Déclaration manquante <button class="citation-flag" data-index="3">
+  void set_web_server(httpd_handle_t server) { server_ = server; }
   
-  void add_file(StorageFile *file) { files_.push_back(file); }
+  void add_file(StorageFile *file) {
+    files_.push_back(file);
+  }
+  
+  void setup();
+  void on_setup_web_server();
 
  protected:
-  void setup_sd_card();   // Déclarations manquantes <button class="citation-flag" data-index="3">
+  void setup_sd_card();
   void setup_flash();
   void setup_inline();
-  static esp_err_t serve_file_handler(httpd_req_t *req);  // Déclaration statique <button class="citation-flag" data-index="4">
+  esp_err_t serve_file(httpd_req_t *req);
 
  private:
   std::string platform_;
+  httpd_handle_t server_{nullptr};
   std::vector<StorageFile*> files_;
 };
 
