@@ -22,8 +22,8 @@ class StorageFile {
 class StorageComponent : public Component {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
-  void add_file(const std::string &source, const std::string &id) {
-    files_.emplace_back(source, id);
+  void add_file(const StorageFile &file) {
+    files_.push_back(file);
   }
   std::string get_file_path(const std::string &id) const;
   void setup() override;
@@ -35,11 +35,12 @@ class StorageComponent : public Component {
 
  private:
   std::string platform_;
-  std::vector<std::pair<std::string, std::string>> files_;
+  std::vector<StorageFile> files_;
 };
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
