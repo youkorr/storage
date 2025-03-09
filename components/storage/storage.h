@@ -7,6 +7,11 @@
 namespace esphome {
 namespace storage {
 
+struct StorageFile {
+  std::string path;
+  std::string id;
+};
+
 class StorageComponent : public Component {
  public:
   void set_platform(const std::string &platform) { platform_ = platform; }
@@ -28,6 +33,7 @@ class StorageComponent : public Component {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
