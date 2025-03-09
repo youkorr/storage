@@ -1,11 +1,16 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esp_http_server.h"
+#include "esp_log.h"
 #include <vector>
 #include <string>
 
 namespace esphome {
 namespace storage {
+
+// Déclaration anticipée de StorageComponent
+class StorageComponent;
 
 class StorageFile : public Component {
  public:
