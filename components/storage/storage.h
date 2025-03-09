@@ -8,8 +8,11 @@
 namespace esphome {
 namespace storage {
 
+class StorageComponent;  // Déclaration anticipée
+
 class StorageFile {
  public:
+  StorageFile(StorageComponent *parent) : parent_(parent) {}
   void set_path(const std::string &path) { path_ = path; }
   std::string get_path() const { return path_; }
 
@@ -17,6 +20,7 @@ class StorageFile {
 
  private:
   std::string path_;
+  StorageComponent *parent_;
 };
 
 class StorageComponent {
@@ -30,6 +34,8 @@ class StorageComponent {
   
   void setup();
   void on_setup_web_server();
+
+  std::string get_platform() const { return platform_; }
 
  protected:
   void setup_sd_card();
