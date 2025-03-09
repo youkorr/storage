@@ -26,9 +26,15 @@ class StorageFile : public Component {
   // Ajout d'une méthode pour définir le parent après la construction
   void set_parent(StorageComponent *parent) { parent_ = parent; }
   
+  // Getter pour parent_
+  StorageComponent* get_parent() const { return parent_; }
+  
  private:
   std::string path_;
   StorageComponent *parent_;
+  
+  // Pour que StorageComponent puisse accéder à parent_
+  friend class StorageComponent;
 };
 
 class StorageComponent : public Component {
@@ -38,7 +44,7 @@ class StorageComponent : public Component {
   
   void add_file(StorageFile *file) {
     // Si le fichier n'a pas de parent, définir this comme parent
-    if (file->parent_ == nullptr) {
+    if (file->get_parent() == nullptr) {
       file->set_parent(this);
     }
     files_.push_back(file);
