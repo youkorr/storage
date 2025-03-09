@@ -10,7 +10,7 @@ static const char *TAG = "storage";
 std::vector<uint8_t> StorageFile::read() {
   std::vector<uint8_t> data;
   
-  if (platform_ == "sd_card") {
+  if (parent_->get_platform() == "sd_card") {
     std::ifstream file(path_, std::ios::binary);
     if (file) {
       file.seekg(0, std::ios::end);
@@ -18,9 +18,9 @@ std::vector<uint8_t> StorageFile::read() {
       file.seekg(0, std::ios::beg);
       file.read(reinterpret_cast<char*>(data.data()), data.size());
     }
-  } else if (platform_ == "flash") {
+  } else if (parent_->get_platform() == "flash") {
     // Implementation for flash storage
-  } else if (platform_ == "inline") {
+  } else if (parent_->get_platform() == "inline") {
     // Implementation for inline storage
   }
 
