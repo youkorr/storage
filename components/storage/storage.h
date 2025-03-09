@@ -13,14 +13,7 @@ class StorageComponent : public Component {
   void add_file(const std::string &source, const std::string &id) {
     files_.emplace_back(source, id);
   }
-  std::string get_file_path(const std::string &id) const {
-    for (const auto &file : files_) {
-      if (file.second == id) {
-        return file.first;
-      }
-    }
-    return "";
-  }
+  std::string get_file_path(const std::string &id) const;
   void setup() override;
 
  protected:
@@ -35,6 +28,7 @@ class StorageComponent : public Component {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
