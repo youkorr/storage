@@ -7,9 +7,16 @@
 namespace esphome {
 namespace storage {
 
-struct StorageFile {
-  std::string path;
-  std::string id;
+class StorageFile {
+ public:
+  void set_path(const std::string &path) { this->path_ = path; }
+  void set_id(const std::string &id) { this->id_ = id; }
+  std::string get_path() const { return path_; }
+  std::string get_id() const { return id_; }
+
+ private:
+  std::string path_;
+  std::string id_;
 };
 
 class StorageComponent : public Component {
@@ -33,6 +40,7 @@ class StorageComponent : public Component {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
