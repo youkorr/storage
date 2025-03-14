@@ -16,6 +16,7 @@ static const char *TAG = "sd_mmc_card";
 FileSizeSensor::FileSizeSensor(sensor::Sensor *sensor, std::string const &path) : sensor(sensor), path(path) {}
 #endif
 
+#ifndef USE_ESP_IDF
 void SdMmc::setup() {}
 
 void SdMmc::loop() {}
@@ -56,7 +57,7 @@ void SdMmc::dump_config() {
 }
 
 void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len, const char *mode) {
-  // Implémentation à ajouter
+  ESP_LOGW(TAG, "Non-ESP-IDF write_file not implemented");
 }
 
 void SdMmc::write_file(const char *path, const uint8_t *buffer, size_t len) {
@@ -68,85 +69,68 @@ void SdMmc::append_file(const char *path, const uint8_t *buffer, size_t len) {
 }
 
 void SdMmc::write_file_chunked(const char *path, const uint8_t *buffer, size_t len, size_t chunk_size) {
-  // Implémentation à ajouter
+  ESP_LOGW(TAG, "Non-ESP-IDF write_file_chunked not implemented");
 }
 
 bool SdMmc::delete_file(const char *path) {
-  // Implémentation à ajouter
+  ESP_LOGW(TAG, "Non-ESP-IDF delete_file not implemented");
   return false;
 }
 
-bool SdMmc::delete_file(std::string const &path) {
-  return this->delete_file(path.c_str());
-}
-
 bool SdMmc::create_directory(const char *path) {
-  // Implémentation à ajouter
+  ESP_LOGW(TAG, "Non-ESP-IDF create_directory not implemented");
   return false;
 }
 
 bool SdMmc::remove_directory(const char *path) {
-  // Implémentation à ajouter
+  ESP_LOGW(TAG, "Non-ESP-IDF remove_directory not implemented");
   return false;
 }
 
 std::vector<uint8_t> SdMmc::read_file(char const *path) {
-  // Implémentation à ajouter
-  return {};
-}
-
-std::vector<uint8_t> SdMmc::read_file(std::string const &path) {
-  return this->read_file(path.c_str());
-}
-
-std::vector<uint8_t> SdMmc::read_file_chunked(char const *path, size_t offset, size_t chunk_size) {
-  // Implémentation à ajouter
-  return {};
-}
-
-std::vector<uint8_t> SdMmc::read_file_chunked(std::string const &path, size_t offset, size_t chunk_size) {
-  return this->read_file_chunked(path.c_str(), offset, chunk_size);
+    ESP_LOGW(TAG, "Non-ESP-IDF read_file not implemented");
+    return {};
 }
 
 bool SdMmc::is_directory(const char *path) {
-  // Implémentation à ajouter
-  return false;
-}
-
-bool SdMmc::is_directory(std::string const &path) {
-  return this->is_directory(path.c_str());
+    ESP_LOGW(TAG, "Non-ESP-IDF is_directory not implemented");
+    return false;
 }
 
 std::vector<std::string> SdMmc::list_directory(const char *path, uint8_t depth) {
-  // Implémentation à ajouter
-  return {};
-}
-
-std::vector<std::string> SdMmc::list_directory(std::string path, uint8_t depth) {
-  return this->list_directory(path.c_str(), depth);
+    ESP_LOGW(TAG, "Non-ESP-IDF list_directory not implemented");
+    return {};
 }
 
 std::vector<FileInfo> SdMmc::list_directory_file_info(const char *path, uint8_t depth) {
-  // Implémentation à ajouter
-  return {};
-}
-
-std::vector<FileInfo> SdMmc::list_directory_file_info(std::string path, uint8_t depth) {
-  return this->list_directory_file_info(path.c_str(), depth);
+    ESP_LOGW(TAG, "Non-ESP-IDF list_directory_file_info not implemented");
+    return {};
 }
 
 size_t SdMmc::file_size(const char *path) {
-  // Implémentation à ajouter
-  return 0;
+    ESP_LOGW(TAG, "Non-ESP-IDF file_size not implemented");
+    return 0;
 }
 
-size_t SdMmc::file_size(std::string const &path) {
-  return this->file_size(path.c_str());
+std::vector<uint8_t> SdMmc::read_file_chunked(char const *path, size_t offset, size_t chunk_size) {
+    ESP_LOGW(TAG, "Non-ESP-IDF read_file_chunked not implemented");
+    return {};
 }
 
-#ifdef USE_SENSOR
-void SdMmc::add_file_size_sensor(sensor::Sensor *sensor, std::string const &path) {
-  this->file_size_sensors_.emplace_back(sensor, path);
+void SdMmc::update_sensors() {
+  ESP_LOGW(TAG, "Non-ESP-IDF update_sensors not implemented");
+}
+
+#ifdef USE_ESP32_FRAMEWORK_ARDUINO
+std::string SdMmc::sd_card_type_to_string(int type) const {
+    ESP_LOGW(TAG, "Non-ESP-IDF sd_card_type_to_string not implemented");
+    return {};
+}
+#endif
+
+std::vector<FileInfo> &SdMmc::list_directory_file_info_rec(const char *path, uint8_t depth, std::vector<FileInfo> &list) {
+    ESP_LOGW(TAG, "Non-ESP-IDF list_directory_file_info_rec not implemented");
+    return list;
 }
 #endif
 
@@ -166,29 +150,6 @@ void SdMmc::set_mode_1bit(bool b) { this->mode_1bit_ = b; }
 
 void SdMmc::set_power_ctrl_pin(GPIOPin *pin) { this->power_ctrl_pin_ = pin; }
 
-void SdMmc::update_sensors() {
-  // Implémentation à ajouter
-}
-
-#ifdef USE_ESP32_FRAMEWORK_ARDUINO
-std::string SdMmc::sd_card_type_to_string(int type) const {
-  // Implémentation à ajouter
-  return "";
-}
-#endif
-
-#ifdef USE_ESP_IDF
-std::string SdMmc::sd_card_type() const {
-  // Implémentation à ajouter
-  return "";
-}
-#endif
-
-std::vector<FileInfo> &SdMmc::list_directory_file_info_rec(const char *path, uint8_t depth, std::vector<FileInfo> &list) {
-  // Implémentation à ajouter
-  return list;
-}
-
 std::string SdMmc::error_code_to_string(ErrorCode code) {
   switch (code) {
     case ErrorCode::ERR_PIN_SETUP:
@@ -203,24 +164,33 @@ std::string SdMmc::error_code_to_string(ErrorCode code) {
 }
 
 long double convertBytes(uint64_t value, MemoryUnits unit) {
-  static constexpr uint64_t factors[] = {1ULL, 1024ULL, 1024ULL * 1024ULL,
-                                         1024ULL * 1024ULL * 1024ULL,
-                                         1024ULL * 1024ULL * 1024ULL * 1024ULL,
-                                         1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL};
-  
-  if (static_cast<int>(unit) < 0 || static_cast<int>(unit) > static_cast<int>(MemoryUnits::PetaByte)) {
-    ESP_LOGE(TAG, "Invalid memory unit provided");
-    return -1.0;
-  }
+    static constexpr uint64_t factors[] = {1ULL, 1024ULL, 1024ULL * 1024ULL,
+                                           1024ULL * 1024ULL * 1024ULL,
+                                           1024ULL * 1024ULL * 1024ULL * 1024ULL,
+                                           static_cast<uint64_t>(1024ULL) *
+                                               static_cast<uint64_t>(1024ULL) *
+                                               static_cast<uint64_t>(1024ULL) *
+                                               static_cast<uint64_t>(1024ULL) *
+                                               static_cast<uint64_t>(1024ULL)};
 
-  return static_cast<long double>(value) / factors[static_cast<int>(unit)];
+    if (unit < MemoryUnits::Byte || unit > MemoryUnits::PetaByte) {
+        ESP_LOGE(TAG, "Invalid memory unit provided");
+        return -1.0;
+    }
+
+    return static_cast<long double>(value) / factors[unit];
 }
 
 FileInfo::FileInfo(std::string const &path, size_t size, bool is_directory)
     : path(path), size(size), is_directory(is_directory) {}
 
+#ifdef USE_SENSOR
+FileSizeSensor::FileSizeSensor(sensor::Sensor *sensor, std::string const &path) : sensor(sensor), path(path) {}
+#endif
+
 }  // namespace sd_mmc_card
 }  // namespace esphome
+
 
 
 
