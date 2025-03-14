@@ -1,6 +1,8 @@
-#pragma once
-#include "esphome/core/gpio.h"
-#include "esphome/core/defines.h"
+#ifndef SD_MMC_CARD_H
+#define SD_MMC_CARD_H
+
+#include <string>
+#include <vector>
 #include "esphome/core/component.h"
 #include "esphome/core/automation.h"
 #ifdef USE_SENSOR
@@ -230,3 +232,6 @@ long double convertBytes(uint64_t, MemoryUnits);
 
 }  // namespace sd_mmc_card
 }  // namespace esphome
+
+#endif  // SD_MMC_CARD_H
+
