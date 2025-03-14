@@ -172,9 +172,19 @@ std::string SdMmc::error_code_to_string(SdMmc::ErrorCode code) {
     }
 }
 
+// Fonction corrigée pour convertir les octets en unités de mémoire
 long double convertBytes(uint64_t value, MemoryUnits unit) {
-    constexpr uint64_t factor = static_cast<uint64_t>(1ULL << (10 * static_cast<int>(unit)));
-    return static_cast<long double>(value) / factor;
+    // Tableau pré-calculé des facteurs de conversion
+    static constexpr uint64_t factors[] = {1ULL, 1024ULL, 1024ULL * 1024ULL, 1024ULL * 1024ULL * 1024ULL};
+    
+    // Vérification de l'unité valide
+    if (unit < MemoryUnits::BYTES || unit > MemoryUnits::GIGABYTES) {
+        ESP_LOGE(TAG, "Invalid memory unit provided");
+        return -1.0;
+    }
+
+    // Conversion en fonction de l'unité
+    return static_cast<long double>(value) / factors[static_cast<int>(unit)];
 }
 
 FileInfo::FileInfo(std::string const &path, size_t size, bool is_directory)
@@ -182,4 +192,5 @@ FileInfo::FileInfo(std::string const &path, size_t size, bool is_directory)
 
 } // namespace sd_mmc_card
 } // namespace esphome
+
 
