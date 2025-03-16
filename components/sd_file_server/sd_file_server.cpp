@@ -14,12 +14,12 @@ std::string format_size(size_t size) {
   const char* units[] = {"B", "KB", "MB", "GB"};
   size_t unit = 0;
   double s = static_cast<double>(size);
-  
+
   while (s >= 1024 && unit < 3) {
     s /= 1024;
     unit++;
   }
-  
+
   char buffer[32];
   snprintf(buffer, sizeof(buffer), "%.2f %s", s, units[unit]);
   return std::string(buffer);
@@ -150,25 +150,29 @@ void SDFileServer::handleUpload(AsyncWebServerRequest *request, const String &fi
   std::string path = this->build_absolute_path(extracted);
 
   if (index == 0 && !this->sd_mmc_card_->is_directory(path)) {
-    auto response = request->beginResponse(401, "application/json", "{ \"error\": \"invalid upload folder\" }");
-    response->addHeader("Connection", "close");
-    request->send(response);
+      request->send(401, "application/json", "{ \"error\": \"invalid upload folder\" }");
     return;
   }
   
   std::string file_name(filename.c_str());
+  std::string full_path = Path::join(path, file_name).c_str();
+
   if (index == 0) {
     ESP_LOGD(TAG, "uploading file %s to %s", file_name.c_str(), path.c_str());
-    this->sd_mmc_card_->write_file(Path::join(path, file_name).c_str(), data, len);
-    return;
+    if (!this->sd_mmc_card_->write_file(full_path.c_str(), data, len)) {
+      request->send(500, "application/json", "{ \"error\": \"failed to write file\" }");
+      return;
+    }
+  } else {
+    if (!this->sd_mmc_card_->append_file(full_path.c_str(), data, len)) {
+      request->send(500, "application/json", "{ \"error\": \"failed to append file\" }");
+      return;
+    }
   }
   
-  this->sd_mmc_card_->append_file(Path::join(path, file_name).c_str(), data, len);
   if (final) {
-    auto response = request->beginResponse(201, "text/html", "upload success");
-    response->addHeader("Connection", "close");
-    request->send(response);
-    return;
+    ESP_LOGD(TAG, "uploading complete %s to %s", file_name.c_str(), path.c_str());
+    request->send(200, "text/plain", "OK");
   }
 }
 
@@ -308,7 +312,7 @@ void SDFileServer::handle_index(AsyncWebServerRequest *request, std::string cons
       <button onclick="window.location.href='/'">Accéder à Web Server</button>
     </div>
     <div class="breadcrumb">
-      <a href="/files">files</a> > )")); 
+      <a href="/files">files</a> > )"));
 
   // Breadcrumb navigation
   std::string current_path = "/files/";
@@ -363,7 +367,7 @@ void SDFileServer::handle_index(AsyncWebServerRequest *request, std::string cons
   for (auto const &entry : entries) {
     std::string uri = "/" + Path::join(this->url_prefix_, Path::remove_root_path(entry.path, this->root_path_));
     std::string file_name = Path::file_name(entry.path);
-    
+
     response->print("<tr><td>");
     if (entry.is_directory) {
       response->print("<a class=\"folder\" href=\"");
@@ -418,7 +422,7 @@ void SDFileServer::handle_index(AsyncWebServerRequest *request, std::string cons
             });
         }
       }
-      
+
       function download_file(path, filename) {
         fetch(path)
           .then(response => response.blob())
@@ -445,20 +449,63 @@ void SDFileServer::handle_download(AsyncWebServerRequest *request, std::string c
     return;
   }
 
-  auto file = this->sd_mmc_card_->read_file(path);
-  if (file.size() == 0) {
-    request->send(401, "application/json", "{ \"error\": \"failed to read file\" }");
+  if (!this->sd_mmc_card_->exists(path)) {
+    request->send(404, "application/json", "{ \"error\": \"file not found\" }");
     return;
   }
-#ifdef USE_ESP_IDF
-  auto *response = request->beginResponse_P(200, "application/octet", file.data(), file.size());
-#else
-  auto *response = request->beginResponseStream("application/octet", file.size());
-  response->write(file.data(), file.size());
-#endif
 
+  if (this->sd_mmc_card_->is_directory(path)) {
+    request->send(400, "application/json", "{ \"error\": \"cannot download a directory\" }");
+    return;
+  }
+
+  File file = this->sd_mmc_card_->open_file(path, "r");
+  if (!file) {
+    request->send(500, "application/json", "{ \"error\": \"failed to open file\" }");
+    return;
+  }
+
+  // Set headers for chunked transfer
+  AsyncWebServerResponse *response = request->beginResponse("application/octet-stream", CONTENT_LENGTH_UNKNOWN);
+  response->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  response->addHeader("Transfer-Encoding", "chunked");
   request->send(response);
+
+  // Send file in chunks
+  uint8_t buffer[2048]; // Adjust buffer size as needed
+  size_t bytesRead;
+  while ((bytesRead = file.read(buffer, sizeof(buffer))) > 0) {
+    request->send(new ReadBytesResponse(buffer, bytesRead));
+  }
+
+  // Close file
+  file.close();
+
+  // Send empty chunk to signal end of transfer
+  request->send(new ReadBytesResponse(nullptr, 0));
 }
+
+// Custom response class to send byte chunks
+class ReadBytesResponse : public AsyncAbstractResponse {
+public:
+  ReadBytesResponse(uint8_t *data, size_t len) : _data(data), _len(len) {}
+  ~ReadBytesResponse() override {}
+
+  size_t _fillBuffer(uint8_t *buf, size_t maxLen) override {
+    if (_data == nullptr || _len == 0 || buf == nullptr) return 0;
+
+    size_t toSend = std::min(maxLen, _len);
+    memcpy(buf, _data, toSend);
+    _len -= toSend;
+    return toSend;
+  }
+
+  bool _isPersistent() override { return false; }
+
+private:
+  uint8_t *_data;
+  size_t _len;
+};
 
 void SDFileServer::handle_delete(AsyncWebServerRequest *request) {
   if (!this->deletion_enabled_) {
@@ -519,6 +566,7 @@ std::string SDFileServer::build_absolute_path(std::string relative_path) const {
 
 }  // namespace sd_file_server
 }  // namespace esphome
+
 
 
 
