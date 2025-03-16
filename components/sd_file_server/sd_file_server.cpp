@@ -30,7 +30,7 @@ std::string get_file_type(const std::string &filename) {
   static const std::map<std::string, std::string> file_types = {
     {"mp3", "Audio (MP3)"},
     {"wav", "Audio (WAV)"},
-    {"flac", "Audio (FLAC)"}, 
+    {"flac", "Audio (FLAC)"},
     {"png", "Image (PNG)"},
     {"jpg", "Image (JPG)"},
     {"jpeg", "Image (JPEG)"},
@@ -82,7 +82,7 @@ std::string Path::join(std::string const &first, std::string const &second) {
   if (second.empty()) return first;
 
   std::string result = first;
-  
+
   if (trailing_slash(result)) {
     result.pop_back();
   }
@@ -99,12 +99,12 @@ std::string Path::join(std::string const &first, std::string const &second) {
 std::string Path::remove_root_path(std::string path, std::string const &root) {
   if (!str_startswith(path, root))
     return path;
-  
+
   path.erase(0, root.size());
   if (path.empty() || path[0] != separator) {
     path = separator + path;
   }
-  
+
   return path;
 }
 
@@ -145,31 +145,28 @@ void SDFileServer::handleUpload(AsyncWebServerRequest *request, const String &fi
     request->send(401, "application/json", "{ \"error\": \"file upload is disabled\" }");
     return;
   }
-  
+
   std::string extracted = this->extract_path_from_url(std::string(request->url().c_str()));
   std::string path = this->build_absolute_path(extracted);
-
-  if (index == 0 && !this->sd_mmc_card_->is_directory(path)) {
-      request->send(401, "application/json", "{ \"error\": \"invalid upload folder\" }");
-    return;
-  }
-  
   std::string file_name(filename.c_str());
-  std::string full_path = Path::join(path, file_name).c_str();
+  std::string full_path = Path::join(path, file_name);
 
   if (index == 0) {
     ESP_LOGD(TAG, "uploading file %s to %s", file_name.c_str(), path.c_str());
+
+    // Create new file
     if (!this->sd_mmc_card_->write_file(full_path.c_str(), data, len)) {
       request->send(500, "application/json", "{ \"error\": \"failed to write file\" }");
       return;
     }
   } else {
+    // Append to existing file
     if (!this->sd_mmc_card_->append_file(full_path.c_str(), data, len)) {
       request->send(500, "application/json", "{ \"error\": \"failed to append file\" }");
       return;
     }
   }
-  
+
   if (final) {
     ESP_LOGD(TAG, "uploading complete %s to %s", file_name.c_str(), path.c_str());
     request->send(200, "text/plain", "OK");
@@ -555,7 +552,7 @@ std::string SDFileServer::build_absolute_path(std::string relative_path) const {
 
   // Join paths and normalize
   std::string absolute = Path::join(normalized_root, relative_path);
-  
+
   // Ensure trailing slash for directories
   if (this->sd_mmc_card_->is_directory(absolute) && !Path::trailing_slash(absolute)) {
     absolute += Path::separator;
@@ -566,6 +563,7 @@ std::string SDFileServer::build_absolute_path(std::string relative_path) const {
 
 }  // namespace sd_file_server
 }  // namespace esphome
+
 
 
 
