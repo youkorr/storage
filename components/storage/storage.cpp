@@ -7,9 +7,9 @@ namespace storage {
 static const char *const TAG = "storage";
 
 std::string StorageComponent::get_file_path(const std::string &file_id) const {
-  for (const auto &file : files_) {
-    if (file.get_id() == file_id) {
-      return file.get_path();
+  for (const auto *file : files_) {
+    if (file->get_id() == file_id) {
+      return file->get_path();
     }
   }
   ESP_LOGW(TAG, "File with ID %s not found", file_id.c_str());
@@ -27,10 +27,9 @@ void StorageComponent::setup() {
     setup_inline();
   }
 
-  // Log registered files
-  for (const auto &file : files_) {
+  for (const auto *file : files_) {
     ESP_LOGD(TAG, "Registered file: %s -> %s", 
-             file.get_path().c_str(), file.get_id().c_str());
+             file->get_path().c_str(), file->get_id().c_str());
   }
 }
 
