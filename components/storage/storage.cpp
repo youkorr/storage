@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "esphome/core/log.h"
+#include "esphome/core/application.h"
 #include "esphome/components/sd_mmc_card/sd_mmc_card.h"
 
 namespace esphome {
@@ -27,6 +28,7 @@ void StorageComponent::setup() {
   } else if (platform_ == "inline") {
     setup_inline();
   }
+  
   for (const auto *file : files_) {
     ESP_LOGD(TAG, "Registered file: %s -> %s (platform: %s)", 
              file->get_path().c_str(), 
@@ -38,15 +40,11 @@ void StorageComponent::setup() {
 void StorageComponent::setup_sd_card() {
   ESP_LOGD(TAG, "Initializing SD card storage using SD_MMC component");
   
-  // Obtenez une référence au composant SD_MMC configuré dans votre YAML
-  this->sd_card_ = App.get_sd_mmc();
-  
   if (this->sd_card_ == nullptr) {
     ESP_LOGE(TAG, "SD_MMC component not found! Make sure it's configured in your YAML.");
     return;
   }
   
-  // Vérifier l'accès au répertoire racine
   std::vector<esphome::sd_mmc_card::FileInfo> root_files = this->sd_card_->list_directory_file_info("/", 1);
   
   if (root_files.empty()) {
@@ -61,11 +59,9 @@ void StorageComponent::setup_sd_card() {
     }
   }
   
-  // Vérifiez l'accès à chaque fichier déclaré
   for (const auto *storage_file : files_) {
     if (storage_file->get_platform() == "sd_card") {
       std::string filepath = storage_file->get_path();
-      // Assurez-vous que le chemin commence par "/"
       if (filepath.empty() || filepath[0] != '/') {
         filepath = "/" + filepath;
       }
@@ -83,12 +79,10 @@ void StorageComponent::setup_sd_card() {
 
 void StorageComponent::setup_flash() {
   ESP_LOGD(TAG, "Initializing flash storage");
-  // Flash storage logic here
 }
 
 void StorageComponent::setup_inline() {
   ESP_LOGD(TAG, "Initializing inline storage");
-  // Inline storage logic here
 }
 
 }  // namespace storage
