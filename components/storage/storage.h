@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "esphome/core/component.h"
-#include "audio_file.h"
+#include "esphome/components/audio/audio.h"
 
 namespace esphome {
 namespace storage {
@@ -22,7 +22,7 @@ class StorageFile : public audio::AudioFile, public Component {
   void set_platform(const std::string &platform) { platform_ = platform; }
 
   // Implement AudioFile interface
-  std::string get_file_path() const override { return path_; }
+  std::string get_filename() const override { return path_; }
   bool is_valid() const override { return !path_.empty(); }
 
   void setup() override {}
