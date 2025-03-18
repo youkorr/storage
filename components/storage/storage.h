@@ -8,7 +8,7 @@
 namespace esphome {
 namespace storage {
 
-class StorageFile : public audio::AudioFile, public Component {
+class StorageFile : public audio::AudioFile {
  public:
   StorageFile() : path_(""), id_(""), platform_("") {}
   StorageFile(const std::string &path, const std::string &id) : path_(path), id_(id), platform_("") {}
@@ -24,9 +24,6 @@ class StorageFile : public audio::AudioFile, public Component {
   // Implement AudioFile interface
   std::string get_filename() const override { return path_; }
   bool is_valid() const override { return !path_.empty(); }
-
-  void setup() override {}
-  void dump_config() override {}
 
  private:
   std::string path_;
