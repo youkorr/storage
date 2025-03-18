@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "esphome/core/log.h"
+#include "esphome/components/sd_mmc_card/sd_mmc_card.h"
 
 namespace esphome {
 namespace storage {
@@ -26,7 +27,6 @@ void StorageComponent::setup() {
   } else if (platform_ == "inline") {
     setup_inline();
   }
-
   for (const auto *file : files_) {
     ESP_LOGD(TAG, "Registered file: %s -> %s (platform: %s)", 
              file->get_path().c_str(), 
@@ -36,8 +36,49 @@ void StorageComponent::setup() {
 }
 
 void StorageComponent::setup_sd_card() {
-  ESP_LOGD(TAG, "Initializing SD card storage");
-  // SD card initialization logic here
+  ESP_LOGD(TAG, "Initializing SD card storage using SD_MMC component");
+  
+  // Obtenez une référence au composant SD_MMC configuré dans votre YAML
+  this->sd_card_ = App.get_sd_mmc();
+  
+  if (this->sd_card_ == nullptr) {
+    ESP_LOGE(TAG, "SD_MMC component not found! Make sure it's configured in your YAML.");
+    return;
+  }
+  
+  // Vérifier l'accès au répertoire racine
+  std::vector<esphome::sd_mmc_card::FileInfo> root_files = this->sd_card_->list_directory_file_info("/", 1);
+  
+  if (root_files.empty()) {
+    ESP_LOGW(TAG, "Root directory is empty or cannot be accessed");
+  } else {
+    ESP_LOGI(TAG, "Found %d files/directories in root:", root_files.size());
+    for (const auto &file_info : root_files) {
+      ESP_LOGI(TAG, "  %s (%s) - %d bytes", 
+               file_info.path.c_str(),
+               file_info.is_directory ? "DIR" : "FILE",
+               file_info.size);
+    }
+  }
+  
+  // Vérifiez l'accès à chaque fichier déclaré
+  for (const auto *storage_file : files_) {
+    if (storage_file->get_platform() == "sd_card") {
+      std::string filepath = storage_file->get_path();
+      // Assurez-vous que le chemin commence par "/"
+      if (filepath.empty() || filepath[0] != '/') {
+        filepath = "/" + filepath;
+      }
+      
+      if (this->sd_card_->file_size(filepath.c_str()) > 0) {
+        ESP_LOGI(TAG, "File exists: %s", filepath.c_str());
+      } else if (this->sd_card_->is_directory(filepath.c_str())) {
+        ESP_LOGI(TAG, "Directory exists: %s", filepath.c_str());
+      } else {
+        ESP_LOGW(TAG, "File or directory not found: %s", filepath.c_str());
+      }
+    }
+  }
 }
 
 void StorageComponent::setup_flash() {
