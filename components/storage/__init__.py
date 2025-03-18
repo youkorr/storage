@@ -29,10 +29,9 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_WEB_SERVER): cv.use_id(web_server_base.WebServerBase),
 }).extend(cv.COMPONENT_SCHEMA)
 
-@cg.coroutine
-def to_code(config):
+async def to_code(config): #Replaced @cg.coroutine with async def
     var = cg.new_Pvariable(config[CONF_ID])
-    yield cg.register_component(var, config)
+    await cg.register_component(var, config) #Replaced yield with await
 
     cg.add(var.set_platform(config[CONF_PLATFORM]))
 
@@ -41,12 +40,13 @@ def to_code(config):
         cg.add(file_var.set_path(file[CONF_PATH]))
         cg.add(file_var.set_platform(config[CONF_PLATFORM]))
         cg.add(file_var.set_chunk_size(file[CONF_CHUNK_SIZE]))  # Set Chunk Size
-        yield cg.register_component(file_var, file)
+        await cg.register_component(file_var, file) #Replaced yield with await
         cg.add(var.add_file(file_var))
 
     if CONF_WEB_SERVER in config:
-        web_server = yield cg.get_variable(config[CONF_WEB_SERVER])
+        web_server = await cg.get_variable(config[CONF_WEB_SERVER]) #Replaced yield with await
         cg.add(var.set_web_server(web_server))
+
 
 
 
