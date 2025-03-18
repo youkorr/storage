@@ -3,11 +3,12 @@
 #include <string>
 #include <vector>
 #include "esphome/core/component.h"
+#include "esphome/components/audio/audio_file.h"
 
 namespace esphome {
 namespace storage {
 
-class StorageFile : public Component {
+class StorageFile : public audio::AudioFile, public Component {
  public:
   StorageFile() : path_(""), id_(""), platform_("") {}
   StorageFile(const std::string &path, const std::string &id) : path_(path), id_(id), platform_("") {}
@@ -19,6 +20,10 @@ class StorageFile : public Component {
   void set_path(const std::string &path) { path_ = path; }
   void set_id(const std::string &id) { id_ = id; }
   void set_platform(const std::string &platform) { platform_ = platform; }
+
+  // Implement AudioFile interface
+  std::string get_file_path() const override { return path_; }
+  bool is_valid() const override { return !path_.empty(); }
 
   void setup() override {}
   void dump_config() override {}
