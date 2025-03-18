@@ -9,14 +9,16 @@ namespace storage {
 
 class StorageFile : public Component {
  public:
-  StorageFile() : path_(""), id_("") {}
-  StorageFile(const std::string &path, const std::string &id) : path_(path), id_(id) {}
+  StorageFile() : path_(""), id_(""), platform_("") {}
+  StorageFile(const std::string &path, const std::string &id) : path_(path), id_(id), platform_("") {}
 
   const std::string &get_path() const { return path_; }
   const std::string &get_id() const { return id_; }
+  const std::string &get_platform() const { return platform_; }
 
   void set_path(const std::string &path) { path_ = path; }
   void set_id(const std::string &id) { id_ = id; }
+  void set_platform(const std::string &platform) { platform_ = platform; }
 
   void setup() override {}
   void dump_config() override {}
@@ -24,6 +26,7 @@ class StorageFile : public Component {
  private:
   std::string path_;
   std::string id_;
+  std::string platform_;
 };
 
 class StorageComponent : public Component {
