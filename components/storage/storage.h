@@ -3,7 +3,13 @@
 #include <vector>
 #include "esphome/core/component.h"
 #include "esphome/components/audio/audio.h"
-#include "esphome/components/sd_mmc_card/sd_mmc_card.h"
+
+// Forward declaration of SDMMCCard class
+namespace esphome {
+namespace sd_mmc_card {
+class SDMMCCard;
+}  // namespace sd_mmc_card
+}  // namespace esphome
 
 namespace esphome {
 namespace storage {
