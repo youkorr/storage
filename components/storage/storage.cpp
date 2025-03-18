@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "esphome/core/log.h"
+#include "esphome/components/sd_mmc_card/sd_mmc_card.h" // sd_mmc_card
 
 namespace esphome {
 namespace storage {
@@ -28,10 +29,11 @@ void StorageComponent::setup() {
   }
 
   for (const auto *file : files_) {
-    ESP_LOGD(TAG, "Registered file: %s -> %s (platform: %s)", 
+    ESP_LOGD(TAG, "Registered file: %s -> %s (platform: %s, chunk_size: %u)", 
              file->get_path().c_str(), 
              file->get_id().c_str(),
-             file->get_platform().c_str());
+             file->get_platform().c_str(),
+             file->get_chunk_size());
   }
 }
 
@@ -52,6 +54,7 @@ void StorageComponent::setup_inline() {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
