@@ -24,7 +24,7 @@ class StorageFile : public audio::AudioFile, public Component {
   void set_path(const std::string &path) { path_ = path; }
   void set_id(const std::string &id) { id_ = id; }
   void set_platform(const std::string &platform) { platform_ = platform; }
-  void set_chunk_size(uint32_t chunk_size) { chunk_size_ = chunk_size; } #set and get chunk size
+  void set_chunk_size(uint32_t chunk_size) { chunk_size_ = chunk_size; } // set and get chunk size
   uint32_t get_chunk_size() const { return chunk_size_; }
 
   std::string get_filename() const { return path_; }
@@ -55,6 +55,7 @@ class StorageComponent : public Component {
 
 }  // namespace storage
 }  // namespace esphome
+
 
 
 
