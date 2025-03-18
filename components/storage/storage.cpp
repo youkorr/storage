@@ -45,20 +45,26 @@ void StorageComponent::setup_sd_card() {
     return;
   }
   
-  std::vector<esphome::sd_mmc_card::FileInfo> root_files = this->sd_card_->list_directory_file_info("/", 1);
+  // Check if SD card is mounted
+  if (!this->sd_card_->is_mounted()) {
+    ESP_LOGE(TAG, "SD card is not mounted");
+    return;
+  }
   
+  // List root directory
+  auto root_files = this->sd_card_->list_directory("/");
   if (root_files.empty()) {
     ESP_LOGW(TAG, "Root directory is empty or cannot be accessed");
   } else {
     ESP_LOGI(TAG, "Found %d files/directories in root:", root_files.size());
     for (const auto &file_info : root_files) {
-      ESP_LOGI(TAG, "  %s (%s) - %d bytes", 
-               file_info.path.c_str(),
-               file_info.is_directory ? "DIR" : "FILE",
-               file_info.size);
+      ESP_LOGI(TAG, "  %s (%s)", 
+               file_info.name.c_str(),
+               file_info.is_directory ? "DIR" : "FILE");
     }
   }
   
+  // Verify access to registered files
   for (const auto *storage_file : files_) {
     if (storage_file->get_platform() == "sd_card") {
       std::string filepath = storage_file->get_path();
@@ -66,10 +72,14 @@ void StorageComponent::setup_sd_card() {
         filepath = "/" + filepath;
       }
       
-      if (this->sd_card_->file_size(filepath.c_str()) > 0) {
-        ESP_LOGI(TAG, "File exists: %s", filepath.c_str());
-      } else if (this->sd_card_->is_directory(filepath.c_str())) {
-        ESP_LOGI(TAG, "Directory exists: %s", filepath.c_str());
+      if (this->sd_card_->exists(filepath.c_str())) {
+        if (this->sd_card_->is_directory(filepath.c_str())) {
+          ESP_LOGI(TAG, "Directory exists: %s", filepath.c_str());
+        } else {
+          ESP_LOGI(TAG, "File exists: %s (%d bytes)", 
+                   filepath.c_str(),
+                   this->sd_card_->file_size(filepath.c_str()));
+        }
       } else {
         ESP_LOGW(TAG, "File or directory not found: %s", filepath.c_str());
       }
