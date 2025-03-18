@@ -28,8 +28,10 @@ void StorageComponent::setup() {
   }
 
   for (const auto *file : files_) {
-    ESP_LOGD(TAG, "Registered file: %s -> %s", 
-             file->get_path().c_str(), file->get_id().c_str());
+    ESP_LOGD(TAG, "Registered file: %s -> %s (platform: %s)", 
+             file->get_path().c_str(), 
+             file->get_id().c_str(),
+             file->get_platform().c_str());
   }
 }
 
