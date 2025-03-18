@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "esphome/core/component.h"
-#include "esphome/components/audio/audio_file.h"
+#include "audio_file.h"
 
 namespace esphome {
 namespace storage {
