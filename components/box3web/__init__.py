@@ -1,13 +1,14 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sd_mmc_card
-from esphome.const import CONF_ID, CONF_URL_PREFIX, CONF_ROOT_PATH, CONF_ENABLE_DELETION, CONF_ENABLE_DOWNLOAD, CONF_ENABLE_UPLOAD
 
-# Import AsyncWebServer
-from esphome.components.async_web_server import AsyncWebServer
-
-# Constants
+# Define constants locally since they may not exist in esphome.const
 CONF_ASYNC_WEB_SERVER_ID = "async_web_server_id"
+CONF_URL_PREFIX = "url_prefix"
+CONF_ROOT_PATH = "root_path"
+CONF_ENABLE_DELETION = "enable_deletion"
+CONF_ENABLE_DOWNLOAD = "enable_download"
+CONF_ENABLE_UPLOAD = "enable_upload"
 
 # Namespace
 Box3Web_ns = cg.esphome_ns.namespace("box3web")
@@ -17,14 +18,14 @@ Box3Web = Box3Web_ns.class_("Box3Web", cg.Component)
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(Box3Web),
+            cv.GenerateID(): cv.declare_id(Box3Web),  # ID for Box3Web
             cv.GenerateID(CONF_ASYNC_WEB_SERVER_ID): cv.use_id(AsyncWebServer),  # Use AsyncWebServer
-            cv.GenerateID(sd_mmc_card.CONF_SD_MMC_CARD_ID): cv.use_id(sd_mmc_card.SdMmc),
-            cv.Optional(CONF_URL_PREFIX, default="file"): cv.string_strict,
-            cv.Optional(CONF_ROOT_PATH, default="/"): cv.string_strict,
-            cv.Optional(CONF_ENABLE_DELETION, default=False): cv.boolean,
-            cv.Optional(CONF_ENABLE_DOWNLOAD, default=False): cv.boolean,
-            cv.Optional(CONF_ENABLE_UPLOAD, default=False): cv.boolean,
+            cv.GenerateID(sd_mmc_card.CONF_SD_MMC_CARD_ID): cv.use_id(sd_mmc_card.SdMmc),  # SD card reference
+            cv.Optional(CONF_URL_PREFIX, default="file"): cv.string_strict,  # Default URL prefix
+            cv.Optional(CONF_ROOT_PATH, default="/"): cv.string_strict,  # Default root path
+            cv.Optional(CONF_ENABLE_DELETION, default=False): cv.boolean,  # Enable deletion
+            cv.Optional(CONF_ENABLE_DOWNLOAD, default=False): cv.boolean,  # Enable download
+            cv.Optional(CONF_ENABLE_UPLOAD, default=False): cv.boolean,  # Enable upload
         }
     ).extend(cv.COMPONENT_SCHEMA),
 )
