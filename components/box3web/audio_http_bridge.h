@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esphome/components/sd_mmc_card/sd_mmc_card.h"
-#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWebSrv.h>
 #include <string>
 
 namespace esphome {
