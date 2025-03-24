@@ -4,7 +4,7 @@
 #include "esphome/core/helpers.h"
 
 // Ajout des inclusions pour ESPAsyncWebServer
-#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWebSrv.h>
 
 namespace esphome {
 namespace box3web {
