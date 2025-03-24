@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <ESPAsyncWebSrv.h>
+#include <WebServer.h>
+#include <WiFi.h>
 
 namespace esphome {
 namespace box3web {
