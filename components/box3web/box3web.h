@@ -3,6 +3,7 @@
 #include <string>
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "esphome/components/sd_mmc_card/sd_mmc_card.h"
+#include "esphome/core/component.h"  // Ajout de Component
 
 namespace esphome {
 namespace box3web {
@@ -17,17 +18,17 @@ class Path {
   static std::string remove_root_path(std::string path, std::string const &root);
 };
 
-class Box3Web : public AsyncWebHandler {
+class Box3Web : public Component, public AsyncWebHandler {  // Héritage de Component
  public:
   Box3Web(web_server_base::WebServerBase *base);
 
-  void setup();
-  void dump_config();
+  void setup() override;  // Méthode obligatoire
+  void dump_config() override;  // Méthode obligatoire
 
   void set_url_prefix(std::string const &prefix);
   void set_root_path(std::string const &path);
   void set_sd_mmc_card(sd_mmc_card::SdMmc *card);
-  
+
   void set_deletion_enabled(bool allow);
   void set_download_enabled(bool allow);
   void set_upload_enabled(bool allow);
@@ -35,7 +36,7 @@ class Box3Web : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest *request) override;
   void handleRequest(AsyncWebServerRequest *request) override;
   void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data,
-                     size_t len, bool final) override;
+                    size_t len, bool final) override;
 
  private:
   web_server_base::WebServerBase *base_{nullptr};
@@ -59,6 +60,8 @@ class Box3Web : public AsyncWebHandler {
   std::string build_prefix() const;
   std::string extract_path_from_url(std::string const &url) const;
   std::string build_absolute_path(std::string relative_path) const;
+
+  const char *component_source_{nullptr};  // Variable pour set_component_source (facultatif)
 };
 
 }  // namespace box3web
