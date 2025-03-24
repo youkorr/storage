@@ -8,6 +8,16 @@ namespace box3web {
 
 static const char *TAG = "box3web";
 
+// Helper functions for startsWith and endsWith (for maximum compatibility)
+bool endsWith(const std::string& str, const std::string& suffix) {
+  return str.size() >= suffix.size() &&
+         str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool startsWith(const std::string& str, const std::string& prefix) {
+  return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
+}
+
 Box3Web::Box3Web(web_server_base::WebServerBase *base) : base_(base) {}
 
 void Box3Web::setup() { this->base_->add_handler(this); }
@@ -44,7 +54,7 @@ void Box3Web::handleRequest(AsyncWebServerRequest *request) {
       // Just acknowledge the request here if needed
       return;
     }
-    
+
     // Handle unsupported methods
     request->send(405, "application/json", "{ \"error\": \"Method not allowed\" }");
   }
@@ -107,22 +117,22 @@ void Box3Web::handle_get(AsyncWebServerRequest *request) const {
 // Get the MIME type based on file extension
 String Box3Web::get_content_type(const std::string &path) const {
   String file_path = String(path.c_str());
-  if (file_path.endsWith(".html")) return "text/html";
-  else if (file_path.endsWith(".css")) return "text/css";
-  else if (file_path.endsWith(".js")) return "application/javascript";
-  else if (file_path.endsWith(".json")) return "application/json";
-  else if (file_path.endsWith(".png")) return "image/png";
-  else if (file_path.endsWith(".jpg") || file_path.endsWith(".jpeg")) return "image/jpeg";
-  else if (file_path.endsWith(".gif")) return "image/gif";
-  else if (file_path.endsWith(".svg")) return "image/svg+xml";
-  else if (file_path.endsWith(".ico")) return "image/x-icon";
-  else if (file_path.endsWith(".mp3")) return "audio/mpeg";
-  else if (file_path.endsWith(".wav")) return "audio/wav";
-  else if (file_path.endsWith(".mp4")) return "video/mp4";
-  else if (file_path.endsWith(".pdf")) return "application/pdf";
-  else if (file_path.endsWith(".zip")) return "application/zip";
-  else if (file_path.endsWith(".txt")) return "text/plain";
-  else if (file_path.endsWith(".xml")) return "application/xml";
+  if (endsWith(file_path, ".html")) return "text/html";
+  else if (endsWith(file_path, ".css")) return "text/css";
+  else if (endsWith(file_path, ".js")) return "application/javascript";
+  else if (endsWith(file_path, ".json")) return "application/json";
+  else if (endsWith(file_path, ".png")) return "image/png";
+  else if (endsWith(file_path, ".jpg") || endsWith(file_path, ".jpeg")) return "image/jpeg";
+  else if (endsWith(file_path, ".gif")) return "image/gif";
+  else if (endsWith(file_path, ".svg")) return "image/svg+xml";
+  else if (endsWith(file_path, ".ico")) return "image/x-icon";
+  else if (endsWith(file_path, ".mp3")) return "audio/mpeg";
+  else if (endsWith(file_path, ".wav")) return "audio/wav";
+  else if (endsWith(file_path, ".mp4")) return "video/mp4";
+  else if (endsWith(file_path, ".pdf")) return "application/pdf";
+  else if (endsWith(file_path, ".zip")) return "application/zip";
+  else if (endsWith(file_path, ".txt")) return "text/plain";
+  else if (endsWith(file_path, ".xml")) return "application/xml";
   return "application/octet-stream";
 }
 
@@ -137,286 +147,114 @@ void Box3Web::write_row(AsyncResponseStream *response, sd_mmc_card::FileInfo con
     file_type = "Directory";
   } else {
     String content_type = get_content_type(info.path);
-    if (content_type.startsWith("image/")) file_type = "Image";
-    else if (content_type.startsWith("audio/")) file_type = "Audio";
-    else if (content_type.startsWith("video/")) file_type = "Video";
-    else if (content_type.startsWith("text/")) file_type = "Text";
+    if (startsWith(content_type, "image/")) file_type = "Image";
+    else if (startsWith(content_type, "audio/")) file_type = "Audio";
+    else if (startsWith(content_type, "video/")) file_type = "Video";
+    else if (startsWith(content_type, "text/")) file_type = "Text";
     else file_type = "File";
   }
 
-  response->print("<tr><td>");
-  if (info.is_directory) {
-    response->print("<a href=\"");
-    response->print(uri.c_str());
-    response->print("\">");
-    response->print(file_name.c_str());
-    response->print("/</a>");
+  std::string row = "<tr>";
+  row += "<td><a href='" + uri + "'>" + file_name + "</a></td>";
+  row += "<td>" + file_type + "</td>";
+  row += "<td>" + file_size + "</td>";
+
+  if (this->deletion_enabled_ && !info.is_directory) {
+    row += "<td><a href='" + uri + "?delete=true'>Delete</a></td>";
   } else {
-    response->print("<a href=\"");
-    response->print(uri.c_str());
-    response->print("\">");
-    response->print(file_name.c_str());
-    response->print("</a>");
+    row += "<td></td>";
   }
-  response->print("</td><td>");
-  response->print(file_type.c_str());
-  response->print("</td><td>");
-  response->print(file_size.c_str());
-  response->print("</td><td>");
-  
-  if (!info.is_directory) {
-    if (this->download_enabled_) {
-      response->print("<button onClick=\"download_file('");
-      response->print(uri.c_str());
-      response->print("','");
-      response->print(file_name.c_str());
-      response->print("')\">Download</button>");
-    }
-    if (this->deletion_enabled_) {
-      response->print("<button onClick=\"delete_file('");
-      response->print(uri.c_str());
-      response->print("')\">Delete</button>");
-    }
-  }
-  response->print("</td></tr>");
+
+  row += "</tr>";
+  response->print(row.c_str());
 }
 
-void Box3Web::handle_index(AsyncWebServerRequest *request, std::string const &path) const {
-  AsyncResponseStream *response = request->beginResponseStream("text/html");
-  response->print(F("<!DOCTYPE html><html lang=\"en\"><head><meta charset=UTF-8><meta "
-                    "name=viewport content=\"width=device-width, initial-scale=1,user-scalable=no\">"
-                    "<style>"
-                    "body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }"
-                    "h1, h2 { color: #333; }"
-                    "table { width: 100%; border-collapse: collapse; margin-top: 20px; }"
-                    "th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }"
-                    "th { background-color: #f2f2f2; }"
-                    "tr:hover { background-color: #f5f5f5; }"
-                    "button { margin: 2px; padding: 5px 10px; background-color: #4CAF50; color: white; "
-                    "border: none; border-radius: 4px; cursor: pointer; }"
-                    "button:hover { background-color: #45a049; }"
-                    ".delete { background-color: #f44336; }"
-                    ".delete:hover { background-color: #d32f2f; }"
-                    "a { color: #2196F3; text-decoration: none; }"
-                    "a:hover { text-decoration: underline; }"
-                    ".upload-form { margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 4px; }"
-                    "</style>"
-                    "</head><body>"
-                    "<h1>SD Card Content</h1><h2>Folder "));
-
-  response->print(path.c_str());
-  response->print(F("</h2>"));
-  
-  // Add breadcrumb navigation
-  std::string current_path = Path::remove_root_path(path, this->root_path_);
-  if (current_path != "/") {
-    response->print("<div class=\"breadcrumb\"><a href=\"/");
-    response->print(this->url_prefix_.c_str());
-    response->print("\">Home</a> / ");
-    
-    std::vector<std::string> parts;
-    std::string part;
-    for (char c : current_path) {
-      if (c == '/') {
-        if (!part.empty()) {
-          parts.push_back(part);
-          part.clear();
-        }
-      } else {
-        part += c;
-      }
-    }
-    if (!part.empty()) {
-      parts.push_back(part);
-    }
-    
-    std::string cumulative_path = "";
-    for (size_t i = 0; i < parts.size(); i++) {
-      cumulative_path += "/" + parts[i];
-      response->print("<a href=\"/");
-      response->print(this->url_prefix_.c_str());
-      response->print(cumulative_path.c_str());
-      response->print("\">");
-      response->print(parts[i].c_str());
-      response->print("</a>");
-      
-      if (i < parts.size() - 1) {
-        response->print(" / ");
-      }
-    }
-    response->print("</div><br>");
+void Box3Web::handle_index(AsyncWebServerRequest *request, const std::string &path) const {
+  auto *response = request->beginResponseStream("text/html");
+  response->print("<!DOCTYPE html><html><head><title>File Browser</title>");
+  response->print("<style>");
+  response->print("body { font-family: sans-serif; }");
+  response->print("table { border-collapse: collapse; width: 100%; }");
+  response->print("th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }");
+  response->print("tr:hover { background-color: #f5f5f5; }");
+  response->print("th { background-color: #4CAF50; color: white; }");
+  response->print("</style>");
+  response->print("</head><body><h1>File Browser</h1><table>");
+  response->print("<tr><th>Name</th><th>Type</th><th>Size</th>");
+  if (this->deletion_enabled_) {
+    response->print("<th>Actions</th>");
   }
-  
-  if (this->upload_enabled_) {
-    response->print(F("<div class=\"upload-form\">"
-                      "<form method=\"POST\" enctype=\"multipart/form-data\">"
-                      "<input type=\"file\" name=\"file\" multiple>"
-                      "<input type=\"submit\" value=\"Upload File(s)\">"
-                      "</form></div>"));
-  }
-  
-  response->print(F("<table id=\"files\">"
-                    "<thead><tr>"
-                    "<th>Name</th>"
-                    "<th>Type</th>"
-                    "<th>Size</th>"
-                    "<th>Actions</th>"
-                    "</tr></thead><tbody>"));
-  
-  auto entries = this->sd_mmc_card_->list_directory_file_info(path, 0);
-  for (auto const &entry : entries)
-    write_row(response, entry);
+  response->print("</tr>");
 
-  response->print(F("</tbody></table>"
-                    "<script>"
-                    "function delete_file(path) {"
-                    "  if(confirm('Are you sure you want to delete this file?')) {"
-                    "    fetch(path, {method: 'DELETE'})"
-                    "    .then(response => {"
-                    "      if(response.ok) {"
-                    "        alert('File deleted successfully');"
-                    "        location.reload();"
-                    "      } else {"
-                    "        alert('Error deleting file');"
-                    "      }"
-                    "    }).catch(error => {"
-                    "      alert('Error: ' + error);"
-                    "    });"
-                    "  }"
-                    "}"
-                    "function download_file(path, filename) {"
-                    "  fetch(path).then(response => response.blob())"
-                    "  .then(blob => {"
-                    "    const link = document.createElement('a');"
-                    "    link.href = URL.createObjectURL(blob);"
-                    "    link.download = filename;"
-                    "    link.click();"
-                    "  }).catch(error => {"
-                    "    alert('Error downloading file: ' + error);"
-                    "  });"
-                    "}"
-                    "</script>"
-                    "</body></html>"));
+  this->sd_mmc_card_->iterate_files(path, [this, response](const sd_mmc_card::FileInfo &info) {
+    this->write_row(response, info);
+  });
 
-  request->send(response);
-}
-
-void Box3Web::handle_download(AsyncWebServerRequest *request, std::string const &path) const {
-  if (!this->download_enabled_) {
-    request->send(401, "application/json", "{ \"error\": \"file download is disabled\" }");
-    return;
-  }
-
-  auto file = this->sd_mmc_card_->read_file(path);
-  if (file.size() == 0) {
-    request->send(404, "application/json", "{ \"error\": \"failed to read file or file is empty\" }");
-    return;
-  }
-
-  // Get the content type based on file extension
-  String content_type = get_content_type(path);
-  
-#ifdef USE_ESP_IDF
-  // Use the pointer-based response for ESP-IDF
-  auto *response = request->beginResponse_P(200, content_type, file.data(), file.size());
-  
-  // For some content types, you might want to set additional headers
-  if (content_type == "audio/mpeg" || content_type == "audio/wav" || 
-      content_type == "video/mp4" || content_type.startsWith("image/")) {
-    response->addHeader("Accept-Ranges", "bytes");
-  }
-  
-  // Add filename for download
-  std::string filename = Path::file_name(path);
-  response->addHeader("Content-Disposition", "inline; filename=\"" + String(filename.c_str()) + "\"");
-#else
-  // For non-ESP-IDF, use stream-based response
-  auto *response = request->beginResponseStream(content_type, file.size());
-  
-  // For some content types, you might want to set additional headers
-  if (content_type == "audio/mpeg" || content_type == "audio/wav" || 
-      content_type == "video/mp4" || content_type.startsWith("image/")) {
-    response->addHeader("Accept-Ranges", "bytes");
-  }
-  
-  // Add filename for download
-  std::string filename = Path::file_name(path);
-  response->addHeader("Content-Disposition", "inline; filename=\"" + String(filename.c_str()) + "\"");
-  
-  response->write(file.data(), file.size());
-#endif
-
+  response->print("</table></body></html>");
   request->send(response);
 }
 
 void Box3Web::handle_delete(AsyncWebServerRequest *request) {
   if (!this->deletion_enabled_) {
-    request->send(401, "application/json", "{ \"error\": \"file deletion is disabled\" }");
+    request->send(403, "application/json", "{ \"error\": \"Deletion is disabled\" }");
     return;
   }
+
   std::string extracted = this->extract_path_from_url(std::string(request->url().c_str()));
-  std::string path = this->build_absolute_path(extracted);
-  if (this->sd_mmc_card_->is_directory(path)) {
-    request->send(401, "application/json", "{ \"error\": \"cannot delete a directory\" }");
-    return;
+  std::string file_path = this->build_absolute_path(extracted);
+
+  if (this->sd_mmc_card_->delete_file(file_path)) {
+    request->send(200, "application/json", "{ \"message\": \"File deleted successfully\" }");
+  } else {
+    request->send(500, "application/json", "{ \"error\": \"Failed to delete file\" }");
   }
-  if (this->sd_mmc_card_->delete_file(path)) {
-    request->send(204, "application/json", "{}");
-    return;
-  }
-  request->send(401, "application/json", "{ \"error\": \"failed to delete file\" }");
 }
 
-std::string Box3Web::build_prefix() const {
-  if (this->url_prefix_.length() == 0 || this->url_prefix_.at(0) != '/')
-    return "/" + this->url_prefix_;
-  return this->url_prefix_;
+std::string Box3Web::build_prefix() const { return "/" + this->url_prefix_; }
+
+std::string Box3Web::build_absolute_path(const std::string &relative) const {
+  return Path::join(this->root_path_, relative);
 }
 
-std::string Box3Web::extract_path_from_url(std::string const &url) const {
+std::string Box3Web::extract_path_from_url(const std::string &url) const {
   std::string prefix = this->build_prefix();
-  return url.substr(prefix.size(), url.size() - prefix.size());
-}
-
-std::string Box3Web::build_absolute_path(std::string relative_path) const {
-  if (relative_path.size() == 0)
-    return this->root_path_;
-
-  std::string absolute = Path::join(this->root_path_, relative_path);
-  return absolute;
-}
-
-std::string Path::file_name(std::string const &path) {
-  size_t pos = path.rfind(Path::separator);
-  if (pos != std::string::npos) {
-    return path.substr(pos + 1);
+  if (url.size() <= prefix.size()) {
+    return "";
   }
-  return "";
+  return url.substr(prefix.size());
 }
 
-bool Path::is_absolute(std::string const &path) { return path.size() && path[0] == separator; }
-
-bool Path::trailing_slash(std::string const &path) { return path.size() && path[path.length() - 1] == separator; }
-
-std::string Path::join(std::string const &first, std::string const &second) {
-  std::string result = first;
-  if (!trailing_slash(first) && !is_absolute(second)) {
-    result.push_back(separator);
+void Box3Web::handle_download(AsyncWebServerRequest *request, const std::string &path) const {
+  if (!this->download_enabled_) {
+    request->send(403, "application/json", "{ \"error\": \"Downloads are disabled\" }");
+    return;
   }
-  if (trailing_slash(first) && is_absolute(second)) {
-    result.pop_back();
-  }
-  result.append(second);
-  return result;
-}
 
-std::string Path::remove_root_path(std::string path, std::string const &root) {
-  if (!str_startswith(path, root))
-    return path;
-  if (path.size() == root.size() || path.size() < 2)
-    return "/";
-  return path.erase(0, root.size());
+  auto file = this->sd_mmc_card_->read_file(path);
+  if (file.empty()) {
+    request->send(404, "application/json", "{ \"error\": \"File not found\" }");
+    return;
+  }
+
+  String content_type = get_content_type(path);
+
+  auto *response = request->beginResponse_P(200, content_type.c_str(), file.data(), file.size());
+
+  if (endsWith(path, ".gz")) {
+    response->setContentEncoding("gzip");
+  }
+
+  // Setting disposition to inline for video/mp4 and images to enable streaming
+  if (content_type == "video/mp4" || startsWith(content_type, "image/")) {
+    response->header("Content-Disposition", "inline");
+  } else {
+    response->header("Content-Disposition", "attachment");
+  }
+
+  request->send(response);
 }
 
 }  // namespace box3web
 }  // namespace esphome
+
+
