@@ -2,7 +2,10 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sd_mmc_card
 
-# Define constants locally since they may not exist in esphome.const
+# Import AsyncWebServer
+from esphome.components.async_web_server import AsyncWebServer
+
+# Define constants
 CONF_ASYNC_WEB_SERVER_ID = "async_web_server_id"
 CONF_URL_PREFIX = "url_prefix"
 CONF_ROOT_PATH = "root_path"
@@ -18,14 +21,14 @@ Box3Web = Box3Web_ns.class_("Box3Web", cg.Component)
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(Box3Web),  # ID for Box3Web
+            cv.GenerateID(): cv.declare_id(Box3Web),
             cv.GenerateID(CONF_ASYNC_WEB_SERVER_ID): cv.use_id(AsyncWebServer),  # Use AsyncWebServer
-            cv.GenerateID(sd_mmc_card.CONF_SD_MMC_CARD_ID): cv.use_id(sd_mmc_card.SdMmc),  # SD card reference
-            cv.Optional(CONF_URL_PREFIX, default="file"): cv.string_strict,  # Default URL prefix
-            cv.Optional(CONF_ROOT_PATH, default="/"): cv.string_strict,  # Default root path
-            cv.Optional(CONF_ENABLE_DELETION, default=False): cv.boolean,  # Enable deletion
-            cv.Optional(CONF_ENABLE_DOWNLOAD, default=False): cv.boolean,  # Enable download
-            cv.Optional(CONF_ENABLE_UPLOAD, default=False): cv.boolean,  # Enable upload
+            cv.GenerateID(sd_mmc_card.CONF_SD_MMC_CARD_ID): cv.use_id(sd_mmc_card.SdMmc),
+            cv.Optional(CONF_URL_PREFIX, default="file"): cv.string_strict,
+            cv.Optional(CONF_ROOT_PATH, default="/"): cv.string_strict,
+            cv.Optional(CONF_ENABLE_DELETION, default=False): cv.boolean,
+            cv.Optional(CONF_ENABLE_DOWNLOAD, default=False): cv.boolean,
+            cv.Optional(CONF_ENABLE_UPLOAD, default=False): cv.boolean,
         }
     ).extend(cv.COMPONENT_SCHEMA),
 )
