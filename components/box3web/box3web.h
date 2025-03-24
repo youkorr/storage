@@ -4,7 +4,7 @@
 #include "esphome/components/web_server_base/web_server_base.h"
 #include <string>
 #include <vector>
-#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWebSrv.h>
 
 namespace esphome {
 namespace box3web {
