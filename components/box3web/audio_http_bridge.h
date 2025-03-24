@@ -3,6 +3,8 @@
 #include "esphome/components/sd_mmc_card/sd_mmc_card.h"
 #include <ESPAsyncWebSrv.h>
 #include <string>
+#include <WiFi.h>
+#include <WebServer.h>
 
 namespace esphome {
 namespace audio_http_bridge {
