@@ -3,6 +3,7 @@
 #include <vector>
 #include "esphome/core/component.h"
 #include "esphome/components/audio/audio.h"
+#include "../sd_mmc_card/sd_mmc_card.h"
 
 namespace esphome {
 namespace storage {
