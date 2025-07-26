@@ -3,6 +3,9 @@
 #include <vector>
 #include "esphome/core/component.h"
 #include "esphome/components/audio/audio.h"
+#include "driver/sdmmc_host.h"
+#include "driver/sdmmc_defs.h"
+#include "esp_vfs_fat.h"
 #include "../sd_mmc_card/sd_mmc_card.h"
 
 namespace esphome {
