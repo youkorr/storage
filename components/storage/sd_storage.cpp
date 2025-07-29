@@ -2,7 +2,7 @@
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
 #include "../sd_mmc_card/sd_mmc_card.h"
-#include "FS.h"
+
 #include <sys/stat.h>
 #include <dirent.h>
 
