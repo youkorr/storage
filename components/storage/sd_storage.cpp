@@ -1,8 +1,6 @@
 #include "sd_storage.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
-#include "../sd_mmc_card/sd_mmc_card.h"
-
 #include <sys/stat.h>
 #include <dirent.h>
 
@@ -14,55 +12,23 @@ static const char *const TAG = "storage.sd";
 void SDStorage::setup() {
   ESP_LOGCONFIG(TAG, "Setting up SD Storage...");
   
-  // Initialiser la carte SD
-  if (!this->init_sd_card()) {
-    ESP_LOGE(TAG, "Failed to initialize SD card");
-    this->mark_failed();
-    return;
-  }
-
   // Vérifier que la carte SD est accessible
   if (!this->ensure_sd_mounted()) {
-    ESP_LOGE(TAG, "SD card not accessible");
-    this->mark_failed();
-    return;
+    ESP_LOGE(TAG, "SD card not accessible - will retry during operation");
+    // Ne pas marquer comme failed, car la carte peut être montée plus tard
+  } else {
+    ESP_LOGCONFIG(TAG, "SD Storage ready with prefix: %s", this->path_prefix_.c_str());
   }
-
-  ESP_LOGCONFIG(TAG, "SD Storage ready with prefix: %s", this->path_prefix_.c_str());
 }
 
 void SDStorage::dump_config() {
   ESP_LOGCONFIG(TAG, "SD Storage:");
   ESP_LOGCONFIG(TAG, "  Path prefix: %s", this->path_prefix_.c_str());
-  ESP_LOGCONFIG(TAG, "  SD card initialized: %s", SD_MMC.cardType() != CARD_NONE ? "yes" : "no");
-}
-
-bool SDStorage::init_sd_card() {
-  ESP_LOGI(TAG, "Initializing SD card...");
   
-  // Initialiser SD_MMC avec les paramètres par défaut
-  // Note: Les pins sont configurées automatiquement selon la configuration ESP32
-  if (!SD_MMC.begin("/sdcard", this->mode_1bit_)) {
-    ESP_LOGE(TAG, "SD card mount failed");
-    return false;
-  }
-  
-  uint8_t cardType = SD_MMC.cardType();
-  if (cardType == CARD_NONE) {
-    ESP_LOGE(TAG, "No SD card attached");
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "SD card initialized successfully");
-  ESP_LOGI(TAG, "Card type: %s", 
-           cardType == CARD_MMC ? "MMC" :
-           cardType == CARD_SD ? "SDSC" :
-           cardType == CARD_SDHC ? "SDHC" : "UNKNOWN");
-  
-  uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
-  ESP_LOGI(TAG, "Card size: %lluMB", cardSize);
-  
-  return true;
+  // Test simple d'accès au répertoire
+  struct stat st;
+  bool sd_available = (stat("/sdcard", &st) == 0 && S_ISDIR(st.st_mode));
+  ESP_LOGCONFIG(TAG, "  SD card accessible: %s", sd_available ? "yes" : "no");
 }
 
 bool SDStorage::ensure_sd_mounted() {
@@ -72,7 +38,7 @@ bool SDStorage::ensure_sd_mounted() {
     return true;
   }
   
-  ESP_LOGW(TAG, "SD card not mounted or not accessible");
+  ESP_LOGVV(TAG, "SD card not mounted or not accessible");
   return false;
 }
 
