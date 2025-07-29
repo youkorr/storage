@@ -1,60 +1,83 @@
 #pragma once
-#include <string>
-#include <vector>
+
 #include "esphome/core/component.h"
-#include "esphome/components/audio/audio.h"
-#include "driver/sdmmc_host.h"
-#include "driver/sdmmc_defs.h"
-#include "esp_vfs_fat.h"
-#include "../sd_mmc_card/sd_mmc_card.h"
+#include "esphome/core/entity_base.h"
+#include <vector>
+#include <map>
 
 namespace esphome {
 namespace storage {
 
-class StorageFile : public audio::AudioFile, public Component {
- public:
-  StorageFile() : path_(""), id_(""), platform_(""), chunk_size_(512) {}
-  StorageFile(const std::string &path, const std::string &id) : path_(path), id_(id), platform_(""), chunk_size_(512) {}
-
-  void setup() override {}
-
-  void set_component_source(const std::string &source) { component_source_ = source; }
-  const std::string &get_component_source() const { return component_source_; }
-
-  const std::string &get_path() const { return path_; }
-  const std::string &get_id() const { return id_; }
-  const std::string &get_platform() const { return platform_; }
-
-  void set_path(const std::string &path) { path_ = path; }
-  void set_id(const std::string &id) { id_ = id; }
-  void set_platform(const std::string &platform) { platform_ = platform; }
-  void set_chunk_size(uint32_t chunk_size) { chunk_size_ = chunk_size; } // set and get chunk size
-  uint32_t get_chunk_size() const { return chunk_size_; }
-
-  std::string get_filename() const { return path_; }
-  bool is_valid() const { return !path_.empty(); }
-
- private:
-  std::string path_;
-  std::string id_;
-  std::string platform_;
-  std::string component_source_;
-  uint32_t chunk_size_;
+struct FileInfo {
+  std::string path;
+  size_t size;
+  bool is_directory;
+  size_t read_offset;
+  FileInfo(std::string const &path, size_t size, bool is_directory);
+  FileInfo();
 };
 
-class StorageComponent : public Component {
+class Storage : public EntityBase {
  public:
-  void setup() override;
-  std::string get_file_path(const std::string &file_id) const;
-  void add_file(StorageFile *file) { files_.push_back(file); }
-  
-  void set_platform(const std::string &platform) { platform_ = platform; }
- private:
-  void setup_sd_card();
-  void setup_flash();
-  void setup_inline();
-  std::vector<StorageFile*> files_;
-  std::string platform_;
+  // direct functions
+  virtual uint8_t direct_read_byte(size_t offset) = 0;
+  virtual bool direct_write_byte(uint8_t data) = 0;
+  virtual bool direct_append_byte(uint8_t data) = 0;
+  virtual size_t direct_read_byte_array(size_t offset, uint8_t *data, size_t data_length) = 0;
+  virtual bool direct_write_byte_array(uint8_t *data, size_t data_length) = 0;
+  virtual bool direct_append_byte_array(uint8_t *data, size_t data_length) = 0;
+  std::vector<FileInfo> list_directory(const std::string &path);
+  FileInfo get_file_info(const std::string &path);
+  void set_file(FileInfo *file);
+  uint8_t read();
+  bool write(uint8_t data);
+  bool append(uint8_t data);
+  size_t read_array(uint8_t *data, size_t data_length);
+  bool write_array(uint8_t *data, size_t data_length);
+  bool append_array(uint8_t *data, size_t data_length);
+
+  // void write_buffer();
+  // void refresh_buffer(uint32_t offset = 0);
+  // uint8_t & operator[] (size_t index);
+  // uint32_t get_buffer_size();
+  // void write_on_shutdown(bool value);
+
+ protected:
+  virtual void direct_set_file(const std::string &file) = 0;
+  virtual FileInfo direct_get_file_info(const std::string &path) = 0;
+  virtual std::vector<FileInfo> direct_list_directory(const std::string &path) = 0;
+  // void load_buffer (uint32_t offset, uint32_t buffer_offset, uint32_t length);
+  // void write_buffer (uint32_t offset, uint32_t buffer_offset, uint32_t length);
+  // void allocate_buffer(uint32_t buffer_size);
+  void update_offset(size_t value);
+  // uint8_t * buffer_;
+  // uint32_t buffer_size_;
+  // uint32_t buffer_offset_;
+  FileInfo *current_file_;
+  // uint32_t base_offset_;
+  // uint32_t max_offset_;
+  // bool write_on_shutdown_;
+};
+
+class StorageClient : public EntityBase {
+ public:
+  std::vector<FileInfo> list_directory(const std::string &path);
+  FileInfo get_file_info(const std::string &path);
+  void set_file(const std::string &path);
+  uint8_t read();
+  void set_read_offset(size_t offset);
+  bool write(uint8_t data);
+  bool append(uint8_t data);
+  size_t read_array(uint8_t *data, size_t data_length);
+  bool write_array(uint8_t *data, size_t data_length);
+  bool append_array(uint8_t *data, size_t data_length);
+
+  static void add_storage(Storage *storage_inst, std::string prefix);
+
+ protected:
+  static std::map<std::string, Storage *> storages;
+  Storage *current_storage_;
+  FileInfo current_file_;
 };
 
 }  // namespace storage
