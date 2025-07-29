@@ -5,7 +5,7 @@ from esphome.const import CONF_ID
 # Définition du namespace et des classes
 storage_ns = cg.esphome_ns.namespace("storage")
 Storage = storage_ns.class_("Storage", cg.Component)
-SDStorage = storage_ns.class_("SDStorage", Storage)  # ← CHANGÉ : Utiliser SDStorage qui hérite de Storage
+SDStorage = storage_ns.class_("SDStorage", Storage)
 StorageClient = storage_ns.class_("StorageClient", cg.EntityBase)
 StorageClientStatic = storage_ns.namespace("StorageClient")
 
@@ -16,9 +16,9 @@ CONF_SD_MMC_ID = "sd_mmc_id"
 # Schéma de configuration
 STORAGE_SCHEMA = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(SDStorage),  # ← CHANGÉ : Utiliser SDStorage
+        cv.GenerateID(): cv.declare_id(SDStorage),
         cv.Required(CONF_PREFIX): cv.string,
-        cv.Optional(CONF_SD_MMC_ID): cv.use_id("sd_mmc_card"),
+        cv.Optional(CONF_SD_MMC_ID): cv.use_id("sd_mmc_card"),  # Optionnel pour compatibilité
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -52,10 +52,8 @@ async def to_code(config):
         prefix = conf[CONF_PREFIX]
         cg.add(var.set_path_prefix(cg.RawExpression(f'"{prefix}"')))
         
-        # Si une carte SD/MMC est spécifiée
-        if CONF_SD_MMC_ID in conf:
-            sd_mmc = await cg.get_variable(conf[CONF_SD_MMC_ID])
-            cg.add(var.set_sd_mmc_card(sd_mmc))
+        # Note: On ne configure plus sd_mmc_card directement
+        # La carte SD est initialisée automatiquement dans SDStorage::setup()
         
         # Ajouter le storage au registre global
         cg.add(StorageClientStatic.add_storage(var, cg.RawExpression(f'"{prefix}"')))
@@ -80,20 +78,6 @@ def validate_config(config):
 
 # Appliquer la validation
 CONFIG_SCHEMA = cv.All(CONFIG_SCHEMA, validate_config)
-
-# Fonction legacy pour compatibilité
-async def storage_to_code(config):
-    """
-    Fonction legacy pour compatibilité avec l'ancien code
-    """
-    storage = await cg.get_variable(config[CONF_ID])
-    prefix = config[CONF_PREFIX]
-    
-    if CONF_SD_MMC_ID in config:
-        sd_mmc = await cg.get_variable(config[CONF_SD_MMC_ID])
-        cg.add(storage.set_sd_mmc_card(sd_mmc))
-    
-    cg.add(StorageClientStatic.add_storage(storage, cg.RawExpression(f'"{prefix}"')))
 
 
 
