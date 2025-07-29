@@ -2,7 +2,8 @@
 
 #include "storage.h"
 #include "esphome/core/component.h"
-#include "esphome/components/sd_mmc_card/sd_mmc_card.h"
+#include "sd_mmc.h"
+#include "FS.h"
 
 namespace esphome {
 namespace storage {
@@ -16,7 +17,7 @@ class SDStorage : public Storage, public Component {
 
   // Configuration depuis __init__.py
   void set_path_prefix(const std::string &prefix) { this->path_prefix_ = prefix; }
-  void set_sd_mmc_card(sd_mmc_card::SDMMCCard *sd_mmc) { this->sd_mmc_ = sd_mmc; }
+  void set_sd_mmc_card(void *sd_mmc) { /* Pas utilisé directement */ }
 
   // Implémentation des méthodes virtuelles de Storage
   uint8_t direct_read_byte(size_t offset) override;
@@ -32,12 +33,22 @@ class SDStorage : public Storage, public Component {
   std::vector<FileInfo> direct_list_directory(const std::string &path) override;
 
   std::string path_prefix_;
-  sd_mmc_card::SDMMCCard *sd_mmc_{nullptr};
   std::string current_file_path_;
   FILE *current_file_{nullptr};
 
+  // Configuration SD
+  int clk_pin_{-1};
+  int cmd_pin_{-1}; 
+  int data0_pin_{-1};
+  int data1_pin_{-1};
+  int data2_pin_{-1};
+  int data3_pin_{-1};
+  bool mode_1bit_{false};
+  uint8_t slot_{0};
+
   std::string get_full_path(const std::string &path);
   void close_current_file();
+  bool init_sd_card();
   bool ensure_sd_mounted();
 };
 
