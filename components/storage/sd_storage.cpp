@@ -1,45 +1,290 @@
-#pragma once
-
-#include "storage.h"
-#include "esphome/core/component.h"
-#include "esphome/components/sd_mmc_card/sd_mmc_card.h"
+#include "sd_storage.h"
+#include "esphome/core/log.h"
+#include "esphome/core/helpers.h"
+#include "sd_mmc.h"
+#include "FS.h"
+#include <sys/stat.h>
+#include <dirent.h>
 
 namespace esphome {
 namespace storage {
 
-class SDStorage : public Storage, public Component {
- public:
-  // Méthodes ESPHome Component
-  void setup() override;
-  void dump_config() override;
-  float get_setup_priority() const override { return setup_priority::DATA; }
+static const char *const TAG = "storage.sd";
 
-  // Configuration depuis __init__.py
-  void set_path_prefix(const std::string &prefix) { this->path_prefix_ = prefix; }
-  void set_sd_mmc_card(sd_mmc_card::SDMMCCard *sd_mmc) { this->sd_mmc_ = sd_mmc; }
+void SDStorage::setup() {
+  ESP_LOGCONFIG(TAG, "Setting up SD Storage...");
+  
+  // Initialiser la carte SD
+  if (!this->init_sd_card()) {
+    ESP_LOGE(TAG, "Failed to initialize SD card");
+    this->mark_failed();
+    return;
+  }
 
-  // Implémentation des méthodes virtuelles de Storage
-  uint8_t direct_read_byte(size_t offset) override;
-  bool direct_write_byte(uint8_t data) override;
-  bool direct_append_byte(uint8_t data) override;
-  size_t direct_read_byte_array(size_t offset, uint8_t *data, size_t data_length) override;
-  bool direct_write_byte_array(uint8_t *data, size_t data_length) override;
-  bool direct_append_byte_array(uint8_t *data, size_t data_length) override;
+  // Vérifier que la carte SD est accessible
+  if (!this->ensure_sd_mounted()) {
+    ESP_LOGE(TAG, "SD card not accessible");
+    this->mark_failed();
+    return;
+  }
 
- protected:
-  void direct_set_file(const std::string &file) override;
-  FileInfo direct_get_file_info(const std::string &path) override;
-  std::vector<FileInfo> direct_list_directory(const std::string &path) override;
+  ESP_LOGCONFIG(TAG, "SD Storage ready with prefix: %s", this->path_prefix_.c_str());
+}
 
-  std::string path_prefix_;
-  sd_mmc_card::SDMMCCard *sd_mmc_{nullptr};
-  std::string current_file_path_;
-  FILE *current_file_{nullptr};
+void SDStorage::dump_config() {
+  ESP_LOGCONFIG(TAG, "SD Storage:");
+  ESP_LOGCONFIG(TAG, "  Path prefix: %s", this->path_prefix_.c_str());
+  ESP_LOGCONFIG(TAG, "  SD card initialized: %s", SD_MMC.cardType() != CARD_NONE ? "yes" : "no");
+}
 
-  std::string get_full_path(const std::string &path);
-  void close_current_file();
-  bool ensure_sd_mounted();
-};
+bool SDStorage::init_sd_card() {
+  ESP_LOGI(TAG, "Initializing SD card...");
+  
+  // Initialiser SD_MMC avec les paramètres par défaut
+  // Note: Les pins sont configurées automatiquement selon la configuration ESP32
+  if (!SD_MMC.begin("/sdcard", this->mode_1bit_)) {
+    ESP_LOGE(TAG, "SD card mount failed");
+    return false;
+  }
+  
+  uint8_t cardType = SD_MMC.cardType();
+  if (cardType == CARD_NONE) {
+    ESP_LOGE(TAG, "No SD card attached");
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "SD card initialized successfully");
+  ESP_LOGI(TAG, "Card type: %s", 
+           cardType == CARD_MMC ? "MMC" :
+           cardType == CARD_SD ? "SDSC" :
+           cardType == CARD_SDHC ? "SDHC" : "UNKNOWN");
+  
+  uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
+  ESP_LOGI(TAG, "Card size: %lluMB", cardSize);
+  
+  return true;
+}
+
+bool SDStorage::ensure_sd_mounted() {
+  // Vérifier si la carte SD est montée en testant l'accès au répertoire racine
+  struct stat st;
+  if (stat("/sdcard", &st) == 0 && S_ISDIR(st.st_mode)) {
+    return true;
+  }
+  
+  ESP_LOGW(TAG, "SD card not mounted or not accessible");
+  return false;
+}
+
+std::string SDStorage::get_full_path(const std::string &path) {
+  std::string full_path = "/sdcard";
+  if (!path.empty() && path[0] != '/') {
+    full_path += "/";
+  }
+  full_path += path;
+  return full_path;
+}
+
+void SDStorage::close_current_file() {
+  if (this->current_file_ != nullptr) {
+    fclose(this->current_file_);
+    this->current_file_ = nullptr;
+  }
+  this->current_file_path_.clear();
+}
+
+void SDStorage::direct_set_file(const std::string &file) {
+  // Si c'est déjà le fichier courant, ne rien faire
+  if (this->current_file_path_ == file && this->current_file_ != nullptr) {
+    return;
+  }
+  
+  // Fermer le fichier précédent
+  this->close_current_file();
+  
+  // Ouvrir le nouveau fichier
+  std::string full_path = this->get_full_path(file);
+  this->current_file_ = fopen(full_path.c_str(), "r+b");
+  
+  if (this->current_file_ == nullptr) {
+    // Essayer de créer le fichier s'il n'existe pas
+    this->current_file_ = fopen(full_path.c_str(), "w+b");
+  }
+  
+  if (this->current_file_ != nullptr) {
+    this->current_file_path_ = file;
+    ESP_LOGVV(TAG, "File opened: %s", full_path.c_str());
+  } else {
+    ESP_LOGE(TAG, "Failed to open file: %s", full_path.c_str());
+  }
+}
+
+FileInfo SDStorage::direct_get_file_info(const std::string &path) {
+  std::string full_path = this->get_full_path(path);
+  
+  struct stat st;
+  if (stat(full_path.c_str(), &st) != 0) {
+    ESP_LOGVV(TAG, "File not found: %s", full_path.c_str());
+    return FileInfo(path, 0, false);
+  }
+  
+  bool is_dir = S_ISDIR(st.st_mode);
+  size_t size = is_dir ? 0 : st.st_size;
+  
+  ESP_LOGVV(TAG, "File info: %s, size: %d, is_dir: %s", 
+            path.c_str(), size, is_dir ? "yes" : "no");
+  
+  return FileInfo(path, size, is_dir);
+}
+
+std::vector<FileInfo> SDStorage::direct_list_directory(const std::string &path) {
+  std::vector<FileInfo> result;
+  std::string full_path = this->get_full_path(path);
+  
+  DIR *dir = opendir(full_path.c_str());
+  if (dir == nullptr) {
+    ESP_LOGW(TAG, "Cannot open directory: %s", full_path.c_str());
+    return result;
+  }
+  
+  struct dirent *entry;
+  while ((entry = readdir(dir)) != nullptr) {
+    // Ignorer . et ..
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+      continue;
+    }
+    
+    std::string entry_path = path.empty() ? entry->d_name : path + "/" + entry->d_name;
+    std::string full_entry_path = full_path + "/" + entry->d_name;
+    
+    struct stat st;
+    if (stat(full_entry_path.c_str(), &st) == 0) {
+      bool is_dir = S_ISDIR(st.st_mode);
+      size_t size = is_dir ? 0 : st.st_size;
+      result.emplace_back(entry_path, size, is_dir);
+    }
+  }
+  
+  closedir(dir);
+  
+  ESP_LOGVV(TAG, "Listed directory %s: %d entries", full_path.c_str(), result.size());
+  return result;
+}
+
+uint8_t SDStorage::direct_read_byte(size_t offset) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for reading");
+    return 0;
+  }
+  
+  if (fseek(this->current_file_, offset, SEEK_SET) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to offset %d", offset);
+    return 0;
+  }
+  
+  int byte = fgetc(this->current_file_);
+  if (byte == EOF) {
+    ESP_LOGVV(TAG, "EOF reached at offset %d", offset);
+    return 0;
+  }
+  
+  return static_cast<uint8_t>(byte);
+}
+
+bool SDStorage::direct_write_byte(uint8_t data) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for writing");
+    return false;
+  }
+  
+  if (fputc(data, this->current_file_) == EOF) {
+    ESP_LOGE(TAG, "Failed to write byte");
+    return false;
+  }
+  
+  fflush(this->current_file_);
+  return true;
+}
+
+bool SDStorage::direct_append_byte(uint8_t data) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for appending");
+    return false;
+  }
+  
+  // Aller à la fin du fichier
+  if (fseek(this->current_file_, 0, SEEK_END) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to end of file");
+    return false;
+  }
+  
+  if (fputc(data, this->current_file_) == EOF) {
+    ESP_LOGE(TAG, "Failed to append byte");
+    return false;
+  }
+  
+  fflush(this->current_file_);
+  return true;
+}
+
+size_t SDStorage::direct_read_byte_array(size_t offset, uint8_t *data, size_t data_length) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for reading");
+    return 0;
+  }
+  
+  if (fseek(this->current_file_, offset, SEEK_SET) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to offset %d", offset);
+    return 0;
+  }
+  
+  size_t bytes_read = fread(data, 1, data_length, this->current_file_);
+  ESP_LOGVV(TAG, "Read %d bytes from offset %d", bytes_read, offset);
+  
+  return bytes_read;
+}
+
+bool SDStorage::direct_write_byte_array(uint8_t *data, size_t data_length) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for writing");
+    return false;
+  }
+  
+  size_t bytes_written = fwrite(data, 1, data_length, this->current_file_);
+  fflush(this->current_file_);
+  
+  if (bytes_written != data_length) {
+    ESP_LOGE(TAG, "Failed to write all bytes (%d/%d)", bytes_written, data_length);
+    return false;
+  }
+  
+  ESP_LOGVV(TAG, "Wrote %d bytes", bytes_written);
+  return true;
+}
+
+bool SDStorage::direct_append_byte_array(uint8_t *data, size_t data_length) {
+  if (this->current_file_ == nullptr) {
+    ESP_LOGE(TAG, "No file set for appending");
+    return false;
+  }
+  
+  // Aller à la fin du fichier
+  if (fseek(this->current_file_, 0, SEEK_END) != 0) {
+    ESP_LOGE(TAG, "Failed to seek to end of file");
+    return false;
+  }
+  
+  size_t bytes_written = fwrite(data, 1, data_length, this->current_file_);
+  fflush(this->current_file_);
+  
+  if (bytes_written != data_length) {
+    ESP_LOGE(TAG, "Failed to append all bytes (%d/%d)", bytes_written, data_length);
+    return false;
+  }
+  
+  ESP_LOGVV(TAG, "Appended %d bytes", bytes_written);
+  return true;
+}
 
 }  // namespace storage
 }  // namespace esphome
