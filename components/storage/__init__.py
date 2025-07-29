@@ -4,7 +4,7 @@ from esphome.const import CONF_ID
 
 # Définition du namespace et des classes
 storage_ns = cg.esphome_ns.namespace("storage")
-Storage = storage_ns.class_("Storage", cg.Component)
+Storage = storage_ns.class_("Storage", cg.Component)  # Hérite de Component
 StorageClient = storage_ns.class_("StorageClient", cg.EntityBase)
 StorageClientStatic = storage_ns.namespace("StorageClient")
 
@@ -21,11 +21,8 @@ STORAGE_SCHEMA = cv.Schema(
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
-# Configuration principale - liste de composants storage
-CONFIG_SCHEMA = cv.All(
-    cv.ensure_list(STORAGE_SCHEMA),
-    cv.Length(min=1)
-)
+# Configuration principale
+CONFIG_SCHEMA = STORAGE_SCHEMA
 
 def storage_schema(class_=None):
     """
@@ -42,43 +39,21 @@ async def to_code(config):
     """
     Fonction principale de génération de code
     """
-    for conf in config:
-        # Créer et enregistrer le composant Storage
-        var = cg.new_Pvariable(conf[CONF_ID])
-        await cg.register_component(var, conf)
-        
-        # Configurer le préfixe de chemin
-        prefix = conf[CONF_PREFIX]
-        cg.add(var.set_path_prefix(cg.RawExpression(f'"{prefix}"')))
-        
-        # Si une carte SD/MMC est spécifiée
-        if CONF_SD_MMC_ID in conf:
-            sd_mmc = await cg.get_variable(conf[CONF_SD_MMC_ID])
-            cg.add(var.set_sd_mmc_card(sd_mmc))
-        
-        # Ajouter le storage au registre global
-        cg.add(StorageClientStatic.add_storage(var, cg.RawExpression(f'"{prefix}"')))
-
-# Fonction pour valider la configuration
-def validate_config(config):
-    """
-    Validation supplémentaire de la configuration
-    """
-    if not config:
-        raise cv.Invalid("Au moins un composant storage doit être configuré")
+    # Créer et enregistrer le composant Storage
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
     
-    # Vérifier les doublons de préfixes
-    prefixes = []
-    for conf in config:
-        prefix = conf[CONF_PREFIX]
-        if prefix in prefixes:
-            raise cv.Invalid(f"Le préfixe '{prefix}' est utilisé plusieurs fois")
-        prefixes.append(prefix)
+    # Configurer le préfixe de chemin
+    prefix = config[CONF_PREFIX]
+    cg.add(var.set_path_prefix(prefix))
     
-    return config
-
-# Appliquer la validation
-CONFIG_SCHEMA = cv.All(CONFIG_SCHEMA, validate_config)
+    # Si une carte SD/MMC est spécifiée
+    if CONF_SD_MMC_ID in config:
+        sd_mmc = await cg.get_variable(config[CONF_SD_MMC_ID])
+        cg.add(var.set_sd_mmc_card(sd_mmc))
+    
+    # Ajouter le storage au registre global
+    cg.add(StorageClientStatic.add_storage(var, prefix))
 
 # Fonction legacy pour compatibilité
 async def storage_to_code(config):
@@ -92,7 +67,7 @@ async def storage_to_code(config):
         sd_mmc = await cg.get_variable(config[CONF_SD_MMC_ID])
         cg.add(storage.set_sd_mmc_card(sd_mmc))
     
-    cg.add(StorageClientStatic.add_storage(storage, cg.RawExpression(f'"{prefix}"')))
+    cg.add(StorageClientStatic.add_storage(storage, prefix))
 
 
 
