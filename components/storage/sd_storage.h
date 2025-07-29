@@ -3,7 +3,7 @@
 #include "storage.h"
 #include "esphome/core/component.h"
 #include "../sd_mmc_card/sd_mmc_card.h"
-#include "FS.h"
+
 
 namespace esphome {
 namespace storage {
