@@ -5,6 +5,7 @@ from esphome.const import CONF_ID
 # Définition du namespace et des classes
 storage_ns = cg.esphome_ns.namespace("storage")
 Storage = storage_ns.class_("Storage", cg.Component)
+SDStorage = storage_ns.class_("SDStorage", Storage)  # ← CHANGÉ : Utiliser SDStorage qui hérite de Storage
 StorageClient = storage_ns.class_("StorageClient", cg.EntityBase)
 StorageClientStatic = storage_ns.namespace("StorageClient")
 
@@ -15,7 +16,7 @@ CONF_SD_MMC_ID = "sd_mmc_id"
 # Schéma de configuration
 STORAGE_SCHEMA = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(Storage),
+        cv.GenerateID(): cv.declare_id(SDStorage),  # ← CHANGÉ : Utiliser SDStorage
         cv.Required(CONF_PREFIX): cv.string,
         cv.Optional(CONF_SD_MMC_ID): cv.use_id("sd_mmc_card"),
     }
@@ -43,7 +44,7 @@ async def to_code(config):
     Fonction principale de génération de code
     """
     for conf in config:
-        # Créer et enregistrer le composant Storage
+        # Créer et enregistrer le composant SDStorage
         var = cg.new_Pvariable(conf[CONF_ID])
         await cg.register_component(var, conf)
         
@@ -93,6 +94,7 @@ async def storage_to_code(config):
         cg.add(storage.set_sd_mmc_card(sd_mmc))
     
     cg.add(StorageClientStatic.add_storage(storage, cg.RawExpression(f'"{prefix}"')))
+
 
 
 
